@@ -1,0 +1,219 @@
+Name,Description,Schema URL,Google Doc URL
+AboutPage,Web page type: About page,https://schema.org/AboutPage,
+AggregateRating,The average rating based on multiple ratings or reviews,https://schema.org/AggregateRating,https://developers.google.com/search/docs/appearance/structured-data/review-snippet
+Article,A news article or piece of investigative report,https://schema.org/Article,https://developers.google.com/search/docs/appearance/structured-data/article
+BlogPosting,A blog post,https://schema.org/BlogPosting,https://developers.google.com/search/docs/appearance/structured-data/article
+NewsArticle,A news article with news-specific properties,https://schema.org/NewsArticle,https://developers.google.com/search/docs/appearance/structured-data/article
+Book,A book,https://schema.org/Book,https://developers.google.com/search/docs/appearance/structured-data/book
+BreadcrumbList,Navigation path showed as a chain of linked pages,https://schema.org/BreadcrumbList,https://developers.google.com/search/docs/appearance/structured-data/breadcrumb
+ContactPage,Web page type: Contact page,https://schema.org/ContactPage,
+Course,A description of an educational course,https://schema.org/Course,https://developers.google.com/search/docs/appearance/structured-data/course
+CourseInstance,Specific offering of a course,https://schema.org/CourseInstance,https://developers.google.com/search/docs/appearance/structured-data/course-info
+Dataset,A body of structured information describing some topic,https://schema.org/Dataset,https://developers.google.com/search/docs/appearance/structured-data/dataset
+EmployerAggregateRating,Rating of an organization as an employer,https://schema.org/EmployerAggregateRating,https://developers.google.com/search/docs/appearance/structured-data/employer-rating
+Event,An event happening at a certain time and location,https://schema.org/Event,https://developers.google.com/search/docs/appearance/structured-data/event
+FAQPage,A page with a list of Frequently Asked Questions,https://schema.org/FAQPage,https://developers.google.com/search/docs/appearance/structured-data/faqpage
+Hospital,A hospital,https://schema.org/Hospital,
+ImageObject,An image file,https://schema.org/ImageObject,https://developers.google.com/search/docs/appearance/structured-data/image-license-metadata
+JobPosting,A job opening listing,https://schema.org/JobPosting,https://developers.google.com/search/docs/appearance/structured-data/job-posting
+LocalBusiness,A physical business location,https://schema.org/LocalBusiness,https://developers.google.com/search/docs/appearance/structured-data/local-business
+MedicalBusiness,A business for medical purposes,https://schema.org/MedicalBusiness,
+MedicalCause,Causative agent for medical condition,https://schema.org/MedicalCause,
+MedicalClinic,A medical facility for diagnosis/healthcare,https://schema.org/MedicalClinic,
+MedicalCondition,Any medical condition affecting normal functioning,https://schema.org/MedicalCondition,
+MedicalDevice,Object used for medical purposes,https://schema.org/MedicalDevice,
+MedicalGuideline,Medical recommendation from authority,https://schema.org/MedicalGuideline,
+MedicalOrganization,Organization providing medical services,https://schema.org/MedicalOrganization,
+MedicalProcedure,Medical process for diagnosis/treatment,https://schema.org/MedicalProcedure,
+MedicalSpecialty,Branch of medical science/practice,https://schema.org/MedicalSpecialty,
+MedicalTest,Medical test for diagnostic purposes,https://schema.org/MedicalTest,
+MedicalTherapy,Medical intervention for treatment,https://schema.org/MedicalTherapy,
+MedicalWebPage,Web page with medical information,https://schema.org/MedicalWebPage,
+Movie,A movie,https://schema.org/Movie,https://developers.google.com/search/docs/appearance/structured-data/movie
+Organization,An organization like company/institution,https://schema.org/Organization,https://developers.google.com/search/docs/appearance/structured-data/organization
+Person,A person,https://schema.org/Person,
+Pharmacy,A pharmacy or drugstore,https://schema.org/Pharmacy,
+Physician,Individual medical practitioner,https://schema.org/Physician,
+PhysiciansOffice,Doctor's office or clinic,https://schema.org/PhysiciansOffice,
+Product,Any offered product or service,https://schema.org/Product,https://developers.google.com/search/docs/appearance/structured-data/product
+ProfessionalService,Provider of professional services,https://schema.org/ProfessionalService,
+QAPage,Question and answer page,https://schema.org/QAPage,https://developers.google.com/search/docs/appearance/structured-data/qapage
+Question,A specific question,https://schema.org/Question,https://developers.google.com/search/docs/appearance/structured-data/qapage
+Recipe,A recipe,https://schema.org/Recipe,https://developers.google.com/search/docs/appearance/structured-data/recipe
+Review,A review of an item,https://schema.org/Review,https://developers.google.com/search/docs/appearance/structured-data/review-snippet
+SearchAction,The act of searching,https://schema.org/SearchAction,https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox
+Service,A service provided by an organization,https://schema.org/Service,
+SoftwareApplication,A software application,https://schema.org/SoftwareApplication,https://developers.google.com/search/docs/appearance/structured-data/software-app
+SpecialAnnouncement,Time-sensitive announcement,https://schema.org/SpecialAnnouncement,https://developers.google.com/search/docs/appearance/structured-data/special-announcements
+VideoObject,A video file,https://schema.org/VideoObject,https://developers.google.com/search/docs/appearance/structured-data/video
+WebApplication,Web-based application,https://schema.org/WebApplication,
+WebPage,A web page,https://schema.org/WebPage,
+WebSite,A website,https://schema.org/WebSite,https://developers.google.com/search/docs/appearance/structured-data/sitelinks-searchbox
+BusinessAudience,Target audience of businesses,https://schema.org/BusinessAudience,
+Brand,A brand name,https://schema.org/Brand,
+ContactPoint,A contact point for an organization,https://schema.org/ContactPoint,
+CorporatePolicyDocument,Document describing corporate policies,https://schema.org/CorporatePolicyDocument,
+DiagnosticLab,Medical diagnostic laboratory,https://schema.org/DiagnosticLab,
+EmergencyService,Emergency service provider,https://schema.org/EmergencyService,
+EmployeeRole,Role of an employee in organization,https://schema.org/EmployeeRole,
+HealthInsurancePlan,Health insurance plan,https://schema.org/HealthInsurancePlan,
+HealthcareConsideration,Healthcare-related consideration,https://schema.org/HealthcareConsideration,
+HowTo,Instructions for accomplishing something,https://schema.org/HowTo,https://developers.google.com/search/docs/appearance/structured-data/how-to
+ItemList,A list of items,https://schema.org/ItemList,https://developers.google.com/search/docs/appearance/structured-data/carousel
+LaboratoryScience,Medical laboratory science,https://schema.org/LaboratoryScience,
+LegacySystem,Legacy software system,https://schema.org/LegacySystem,
+MedicalCode,Medical coding system,https://schema.org/MedicalCode,
+MedicalDatabase,Medical information database,https://schema.org/MedicalDatabase,
+MedicalEntity,Generic medical entity,https://schema.org/MedicalEntity,
+MedicalObservationalStudy,Medical observational study,https://schema.org/MedicalObservationalStudy,
+MedicalResearcher,Medical researcher,https://schema.org/MedicalResearcher,
+MedicalScholarlyArticle,Medical scholarly article,https://schema.org/MedicalScholarlyArticle,
+MedicalStudy,Medical research study,https://schema.org/MedicalStudy,
+MobileApplication,Mobile software application,https://schema.org/MobileApplication,
+OnlineBusiness,Business operating online,https://schema.org/OnlineBusiness,
+OrganizationRole,Role within organization,https://schema.org/OrganizationRole,
+PatientExperience,Patient healthcare experience,https://schema.org/PatientExperience,
+PaymentService,Payment processing service,https://schema.org/PaymentService,
+ProfessionalService,Professional service provider,https://schema.org/ProfessionalService,
+ProjectManagementSystem,Project management software,https://schema.org/ProjectManagementSystem,
+ResearchProject,Research project,https://schema.org/ResearchProject,
+SaaSOffer,Software as a Service offering,https://schema.org/SaaSOffer,
+SalesContract,Sales contract document,https://schema.org/SalesContract,
+ServiceChannel,Service access channel,https://schema.org/ServiceChannel,
+SoftwareSourceCode,Software source code,https://schema.org/SoftwareSourceCode,
+SubscriptionService,Subscription-based service,https://schema.org/SubscriptionService,
+TechArticle,Technical article,https://schema.org/TechArticle,
+WebAPI,Web API service,https://schema.org/WebAPI,
+WorkflowManagementSystem,Workflow management software,https://schema.org/WorkflowManagementSystem,
+AggregateOffer,Collection of offers from different sellers,https://schema.org/AggregateOffer,https://developers.google.com/search/docs/appearance/structured-data/product-snippet
+AlignmentObject,Educational alignment of content,https://schema.org/AlignmentObject,https://developers.google.com/search/docs/appearance/structured-data/learning-video
+Answer,Answer to a question,https://schema.org/Answer,https://developers.google.com/search/docs/appearance/structured-data/qapage
+Audience,Target audience for content,https://schema.org/Audience,
+BroadcastEvent,Live broadcast event,https://schema.org/BroadcastEvent,https://developers.google.com/search/docs/appearance/structured-data/video
+BusinessEvent,Business-related event,https://schema.org/BusinessEvent,https://developers.google.com/search/docs/appearance/structured-data/event
+Certification,Professional certification,https://schema.org/Certification,
+Claim,A claim subject to review,https://schema.org/Claim,https://developers.google.com/search/docs/appearance/structured-data/factcheck
+ClaimReview,Fact-checking review,https://schema.org/ClaimReview,https://developers.google.com/search/docs/appearance/structured-data/factcheck
+Comment,Comment on content,https://schema.org/Comment,https://developers.google.com/search/docs/appearance/structured-data/discussion-forum
+DataCatalog,Collection of datasets,https://schema.org/DataCatalog,https://developers.google.com/search/docs/appearance/structured-data/dataset
+DefinedTerm,Defined terminology,https://schema.org/DefinedTerm,
+DigitalDocument,Electronic document,https://schema.org/DigitalDocument,
+DiscussionForumPosting,Forum post,https://schema.org/DiscussionForumPosting,https://developers.google.com/search/docs/appearance/structured-data/discussion-forum
+EducationalOccupationalCredential,Educational credential,https://schema.org/EducationalOccupationalCredential,
+EntryPoint,Entry point for software,https://schema.org/EntryPoint,
+FinancialProduct,Financial service product,https://schema.org/FinancialProduct,
+FinancialService,Financial service provider,https://schema.org/FinancialService,
+GovernmentService,Government provided service,https://schema.org/GovernmentService,
+HealthPlanCostSharingSpecification,Health plan cost details,https://schema.org/HealthPlanCostSharingSpecification,
+HealthPlanFormulary,Health plan drug formulary,https://schema.org/HealthPlanFormulary,
+HealthPlanNetwork,Health plan provider network,https://schema.org/HealthPlanNetwork,
+Invoice,Business invoice,https://schema.org/Invoice,
+ItemList,List of items,https://schema.org/ItemList,
+LearningResource,Educational resource,https://schema.org/LearningResource,https://developers.google.com/search/docs/appearance/structured-data/learning-video
+MediaObject,Media file,https://schema.org/MediaObject,
+MedicalContraindication,Medical contraindication,https://schema.org/MedicalContraindication,
+MedicalIndication,Medical indication,https://schema.org/MedicalIndication,
+MedicalRiskFactor,Medical risk factor,https://schema.org/MedicalRiskFactor,
+MedicalSign,Medical sign,https://schema.org/MedicalSign,
+MedicalSymptom,Medical symptom,https://schema.org/MedicalSymptom,
+MedicalTrial,Medical trial,https://schema.org/MedicalTrial,
+MonetaryAmount,Monetary value,https://schema.org/MonetaryAmount,
+Occupation,Professional occupation,https://schema.org/Occupation,https://developers.google.com/search/docs/appearance/structured-data/estimated-salary
+Offer,Product or service offering,https://schema.org/Offer,
+OrderItem,Item in an order,https://schema.org/OrderItem,
+PaymentMethod,Payment method,https://schema.org/PaymentMethod,
+PriceSpecification,Price specification,https://schema.org/PriceSpecification,
+PropertyValue,Property-value pair,https://schema.org/PropertyValue,
+PublicationIssue,Publication issue,https://schema.org/PublicationIssue,
+Report,Formal report,https://schema.org/Report,
+ScholarlyArticle,Scholarly article,https://schema.org/ScholarlyArticle,
+SearchResultsPage,Search results page,https://schema.org/SearchResultsPage,
+SolveMathAction,Math problem solving,https://schema.org/SolveMathAction,https://developers.google.com/search/docs/appearance/structured-data/math-solvers
+StructuredValue,Structured data value,https://schema.org/StructuredValue,
+TechArticle,Technical article,https://schema.org/TechArticle,
+Thesis,Academic thesis,https://schema.org/Thesis,
+UserComments,User comments,https://schema.org/UserComments,
+UserDownloads,User downloads,https://schema.org/UserDownloads,
+UserInteraction,User interaction,https://schema.org/UserInteraction,
+UserLikes,User likes,https://schema.org/UserLikes,
+UserPageVisits,Page visit analytics,https://schema.org/UserPageVisits,
+UserPlays,Content play analytics,https://schema.org/UserPlays,
+UserPlusOnes,Social endorsements,https://schema.org/UserPlusOnes,
+UserReview,User review,https://schema.org/UserReview,
+UserTweets,User tweets,https://schema.org/UserTweets,
+WebContent,Web content,https://schema.org/WebContent,
+WebPageElement,Web page element,https://schema.org/WebPageElement,
+WorkBasedProgram,Work-based program,https://schema.org/WorkBasedProgram,
+DemandAction,Request for service,https://schema.org/DemandAction,
+DeliveryEvent,Delivery of item or service,https://schema.org/DeliveryEvent,
+DeliveryMethod,Method of delivery,https://schema.org/DeliveryMethod,
+Department,Organizational department,https://schema.org/Department,
+DiagnosticProcedure,Diagnostic medical procedure,https://schema.org/DiagnosticProcedure,
+EducationalOrganization,Educational institution,https://schema.org/EducationalOrganization,
+EmailMessage,Email communication,https://schema.org/EmailMessage,
+EngageAction,User engagement action,https://schema.org/EngageAction,
+EntertainmentBusiness,Entertainment business,https://schema.org/EntertainmentBusiness,
+ExercisePlan,Exercise routine plan,https://schema.org/ExercisePlan,
+HealthcareCosts,Healthcare cost information,https://schema.org/HealthcareCosts,
+HealthcareReport,Healthcare-related report,https://schema.org/HealthcareReport,
+HowToSection,Section of instructions,https://schema.org/HowToSection,
+HowToStep,Instruction step,https://schema.org/HowToStep,
+HowToTip,Instructional tip,https://schema.org/HowToTip,
+InsuranceAgency,Insurance provider,https://schema.org/InsuranceAgency,
+Intangible,Intangible item,https://schema.org/Intangible,
+InteractionCounter,Interaction metrics,https://schema.org/InteractionCounter,
+LearningVideo,Educational video,https://schema.org/LearningVideo,
+LiveBlogPosting,Live blog update,https://schema.org/LiveBlogPosting,
+MediaSubscription,Media service subscription,https://schema.org/MediaSubscription,
+MedicalAudience,Medical content audience,https://schema.org/MedicalAudience,
+MedicalConditionStage,Disease/condition stage,https://schema.org/MedicalConditionStage,
+MedicalDevicePurpose,Medical device purpose,https://schema.org/MedicalDevicePurpose,
+MedicalEvidenceLevel,Medical evidence quality,https://schema.org/MedicalEvidenceLevel,
+MedicalImagingTechnique,Medical imaging method,https://schema.org/MedicalImagingTechnique,
+MedicalIntangible,Medical intangible item,https://schema.org/MedicalIntangible,
+MedicalRiskCalculator,Medical risk calculator,https://schema.org/MedicalRiskCalculator,
+MedicalRiskEstimator,Medical risk estimator,https://schema.org/MedicalRiskEstimator,
+MedicalRiskScore,Medical risk score,https://schema.org/MedicalRiskScore,
+MedicalSignOrSymptom,Medical sign or symptom,https://schema.org/MedicalSignOrSymptom,
+MedicalTestPanel,Group of medical tests,https://schema.org/MedicalTestPanel,
+Message,Communication message,https://schema.org/Message,
+MonetaryAmountDistribution,Money amount distribution,https://schema.org/MonetaryAmountDistribution,
+OccupationalExperienceRequirements,Job experience requirements,https://schema.org/OccupationalExperienceRequirements,
+OnlineBusiness,Online business,https://schema.org/OnlineBusiness,
+OpeningHoursSpecification,Business hours,https://schema.org/OpeningHoursSpecification,
+OrderStatus,Order status,https://schema.org/OrderStatus,
+OwnershipInfo,Ownership information,https://schema.org/OwnershipInfo,
+PalliativeProcedure,Palliative procedure,https://schema.org/PalliativeProcedure,
+Patient,Medical patient,https://schema.org/Patient,
+PaymentChargeSpecification,Payment charge details,https://schema.org/PaymentChargeSpecification,
+PaymentStatusType,Payment status,https://schema.org/PaymentStatusType,
+PerformAction,Performance action,https://schema.org/PerformAction,
+PhysicalActivityCategory,Physical activity type,https://schema.org/PhysicalActivityCategory,
+PhysicalExam,Physical examination,https://schema.org/PhysicalExam,
+PhysicalTherapy,Physical therapy,https://schema.org/PhysicalTherapy,
+PostalAddress,Mailing address,https://schema.org/PostalAddress,
+PreventionIndication,Prevention indication,https://schema.org/PreventionIndication,
+PriceSpecification,Price details,https://schema.org/PriceSpecification,
+ProfessionalService,Professional service,https://schema.org/ProfessionalService,
+ProfilePage,Profile webpage,https://schema.org/ProfilePage,
+ProgramMembership,Program membership,https://schema.org/ProgramMembership,
+PropertyValueSpecification,Property value details,https://schema.org/PropertyValueSpecification,
+PublicHealth,Public health,https://schema.org/PublicHealth,
+QualitativeValue,Qualitative value,https://schema.org/QualitativeValue,
+QuantitativeValue,Quantitative value,https://schema.org/QuantitativeValue,
+RadiationTherapy,Radiation therapy,https://schema.org/RadiationTherapy,
+RecommendedDoseSchedule,Medication dosing schedule,https://schema.org/RecommendedDoseSchedule,
+ReplyAction,Reply to message,https://schema.org/ReplyAction,
+ReportedDoseSchedule,Reported medication dosing,https://schema.org/ReportedDoseSchedule,
+ResearchOrganization,Research organization,https://schema.org/ResearchOrganization,
+ReviewAction,Review action,https://schema.org/ReviewAction,
+SalesEvent,Sales event,https://schema.org/SalesEvent,
+ServiceChannel,Service delivery channel,https://schema.org/ServiceChannel,
+ShareAction,Content sharing,https://schema.org/ShareAction,
+SpeakableSpecification,Speakable content,https://schema.org/SpeakableSpecification,
+SubscribeAction,Subscribe to service,https://schema.org/SubscribeAction,
+TherapeuticProcedure,Therapeutic procedure,https://schema.org/TherapeuticProcedure,
+TreatmentIndication,Treatment indication,https://schema.org/TreatmentIndication,
+UpdateAction,Update action,https://schema.org/UpdateAction,
+VirtualLocation,Virtual location,https://schema.org/VirtualLocation,
+WarrantyPromise,Warranty terms,https://schema.org/WarrantyPromise,

@@ -1,0 +1,89 @@
+Schema Analysis Tool Requirements
+Core Functionality
+
+Accept a single URL and keyword as input
+Extract and analyze schema markup from the input URL
+Analyze schema markup from competitor pages
+Compare against official schema.org specifications
+Generate recommendations for schema improvements
+
+Data Collection & Analysis Requirements
+Input URL Analysis
+Extract all schema markup from the provided URL
+Identify and categorize schema types present
+
+Competitor Analysis
+
+Pull top 10 ranking pages for the provided keyword
+Extract schema markup from competitor pages
+Identify schema types and fields used by competitors
+Compare competitor schema usage against input URL
+
+Valueserp can be used for google searches:
+```
+import requests
+import json
+
+# set up the request parameters
+params = {
+'api_key': 'E1DCFF8C9B88423D94750D2E791D70F7',
+  'q': 'pizza'
+}
+
+# make the http GET request to VALUE SERP
+api_result = requests.get('https://api.valueserp.com/search', params)
+
+# print the JSON response from VALUE SERP
+print(json.dumps(api_result.json()))
+
+```
+
+Maintain lookup table of schema types to schema.org URLs
+	Name	Description	Schema URL	Google Doc URL
+0	AboutPage	Web page type: About page	https://schema.org/AboutPage	NaN
+1	AggregateRating	The average rating based on multiple ratings o...	https://schema.org/AggregateRating	https://developers.google.com/search/docs/appe...
+2	Article	A news article or piece of investigative report	https://schema.org/Article	https://developers.google.com/search/docs/appe...
+3	BlogPosting	A blog post	https://schema.org/BlogPosting	https://developers.google.com/search/docs/appe...
+4	NewsArticle	A news article with news-specific properties	https://schema.org/NewsArticle	https://developers.google.com/search/docs/appe...
+
+Have a CSV that can be uploaded in the above format.
+
+Schema.org Integration
+Pull official schema.org specifications for relevant schema types
+Compare current implementation against official specifications
+Identify unused but available fields from schema.org
+
+Google Integration
+Reference Google's developer documentation for schema types
+Identify rich result opportunities based on schema types
+Check against Google's recommended schema properties
+
+Output Requirements
+
+Missing Schema Opportunities
+Schema types supported but missing from the page
+Additional fields available but unused in current schema
+Rich result opportunities based on content type
+
+Competitor Insights
+Common schema types used by competitors
+Unique schema implementations from competitors
+Fields competitors are using that the input URL isn't
+
+Official Documentation References
+Relevant schema.org URLs for each schema type
+Google developer documentation links where applicable
+Any updates or changes to official schema specifications
+
+Technical Considerations
+Tool should be lightweight and run quickly
+Focus on the top ~200 most common schema types initially
+Store reference data (schema.org specs, Google docs) in a lookup table
+Consider future integration with larger site-wide monitoring system
+
+Success Criteria
+Tool can process any valid URL and keyword combination
+Recommendations are actionable and specific
+Output is clear and easy to understand
+Processing time is reasonable (specific threshold TBD)
+Recommendations align with both Google requirements and competitor usage
