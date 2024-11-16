@@ -4,6 +4,7 @@ import pandas as pd
 import logging
 import sys
 from pathlib import Path
+from typing import Dict, Any, List, Optional  # Added import statements
 from schema_analyzer import SchemaAnalyzer
 from competitor_analyzer import CompetitorAnalyzer
 from schema_validator import SchemaValidator
@@ -11,7 +12,7 @@ from utils import format_schema_data
 import plotly.graph_objects as go
 import plotly.express as px
 import time
-import json  # Added import statement
+import json
 
 # Configure logging
 logging.basicConfig(
