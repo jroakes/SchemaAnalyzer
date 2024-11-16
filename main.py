@@ -4,7 +4,7 @@ import pandas as pd
 import logging
 import sys
 from pathlib import Path
-from typing import Dict, Any, List, Optional  # Added import statements
+from typing import Dict, Any, List, Optional
 from schema_analyzer import SchemaAnalyzer
 from competitor_analyzer import CompetitorAnalyzer
 from schema_validator import SchemaValidator
@@ -89,7 +89,7 @@ def display_recommendations_with_tooltips(recommendations):
         st.markdown(recommendations.get('rich_results_properties', 'No rich results properties specified'))
 
 def display_schema_card(schema_data: Dict[str, Any], schema_types_df, card_type: str = "normal"):
-    """Display a schema card with documentation and details"""
+    """Display a schema card with documentation and details based on card type"""
     schema_type = schema_data.get('type')
     
     # Card styling based on type
@@ -110,89 +110,134 @@ def display_schema_card(schema_data: Dict[str, Any], schema_types_df, card_type:
     # Display documentation references
     display_documentation_references(schema_types_df, schema_type)
     
-    # Display issues if any
-    if 'issues' in schema_data:
-        for issue in schema_data['issues']:
-            st.warning(issue)
-    
-    # Display recommendations if available
-    if 'recommendations' in schema_data:
-        with st.expander("💡 Recommendations"):
-            st.markdown(schema_data['recommendations'])
-    
-    # Display schema data if available
-    if 'key' in schema_data:
-        with st.expander("🔍 Schema Data"):
-            try:
-                schema_json = json.loads(schema_data['key'])
-                st.json(schema_json)
-            except:
-                st.code(schema_data['key'])
+    # Display content based on card type
+    if card_type == "needs_improvement":
+        # Validation scorecard
+        with st.expander("📊 Validation Score", expanded=True):
+            st.markdown("### Validation Results")
+            if 'issues' in schema_data:
+                for issue in schema_data['issues']:
+                    st.warning(issue)
+            else:
+                st.success("No validation issues found")
+        
+        # Missing properties compared to competitors
+        if 'competitor_properties' in schema_data:
+            with st.expander("🔄 Competitor Comparison"):
+                st.markdown("### Properties Used by Competitors")
+                for prop in schema_data.get('competitor_properties', []):
+                    st.info(f"- {prop}")
+        
+        # Implementation recommendations
+        if 'recommendations' in schema_data:
+            with st.expander("💡 Recommendations"):
+                st.markdown(schema_data['recommendations'])
+                
+    elif card_type == "suggested":
+        # Implementation details
+        with st.expander("📝 Implementation Guide", expanded=True):
+            if 'recommendations' in schema_data:
+                st.markdown(schema_data['recommendations'])
+            
+        # Competitor usage
+        if 'reason' in schema_data:
+            st.info(f"💡 {schema_data['reason']}")
+            
+        # Implementation template
+        with st.expander("🔧 Implementation Template"):
+            template = {
+                "@context": "https://schema.org",
+                "@type": schema_type,
+                # Add recommended properties
+                "name": "Example Name",
+                "description": "Example Description"
+            }
+            st.code(json.dumps(template, indent=2))
+            
+    else:  # Good implementation
+        # Validation scorecard
+        with st.expander("✅ Validation Score", expanded=True):
+            st.success("All validation checks passed")
+            
+        # Schema data
+        if 'key' in schema_data:
+            with st.expander("🔍 Current Implementation"):
+                try:
+                    schema_json = json.loads(schema_data['key'])
+                    st.json(schema_json)
+                except:
+                    st.code(schema_data['key'])
 
 def display_schema_analysis_results(schema_data, validation_results, competitor_data, schema_types_df):
-    """Display schema analysis results in three categories"""
+    """Display schema analysis results in expandable sections"""
     try:
-        st.markdown("## Analysis Results")
+        st.markdown("## Schema Analysis Results")
         
         # Good Implementations Section
-        if validation_results.get('good_schemas'):
-            st.markdown("### ✅ Good Implementations")
-            st.markdown("These schemas are well-implemented and follow best practices:")
-            for schema in validation_results['good_schemas']:
-                display_schema_card(schema, schema_types_df, "good")
+        with st.expander("✅ Good Implementations", expanded=True):
+            if validation_results.get('good_schemas'):
+                st.markdown("These schemas are well-implemented and follow best practices:")
+                for schema in validation_results['good_schemas']:
+                    display_schema_card(schema, schema_types_df, "good")
+            else:
+                st.info("No perfectly implemented schemas found")
         
         # Needs Improvement Section
-        if validation_results.get('needs_improvement'):
-            st.markdown("### 🔧 Needs Improvement")
-            st.markdown("These schemas need attention and improvements:")
-            for schema in validation_results['needs_improvement']:
-                display_schema_card(schema, schema_types_df, "needs_improvement")
+        with st.expander("🔧 Needs Improvement", expanded=True):
+            if validation_results.get('needs_improvement'):
+                st.markdown("These schemas need attention and improvements:")
+                for schema in validation_results['needs_improvement']:
+                    display_schema_card(schema, schema_types_df, "needs_improvement")
+            else:
+                st.info("No schemas requiring improvement found")
         
         # Recommended Additions Section
-        if validation_results.get('suggested_additions'):
-            st.markdown("### ➕ Recommended Additions")
-            st.markdown("Consider adding these schemas to improve your implementation:")
-            for schema in validation_results['suggested_additions']:
-                display_schema_card(schema, schema_types_df, "suggested")
+        with st.expander("➕ Recommended Additions", expanded=True):
+            if validation_results.get('suggested_additions'):
+                st.markdown("Consider adding these schemas to improve your implementation:")
+                for schema in validation_results['suggested_additions']:
+                    display_schema_card(schema, schema_types_df, "suggested")
+            else:
+                st.info("No additional schema recommendations at this time")
         
         # Competitor Insights
         if competitor_data:
-            st.markdown("### 🔍 Competitor Schema Usage")
-            try:
-                schema_types = []
-                usage_counts = []
-                for url, schemas in competitor_data.items():
-                    for schema_type in schemas.keys():
-                        schema_types.append(schema_type)
-                        usage_counts.append(1)
+            with st.expander("🔍 Competitor Schema Usage", expanded=True):
+                try:
+                    schema_types = []
+                    usage_counts = []
+                    for url, schemas in competitor_data.items():
+                        for schema_type in schemas.keys():
+                            schema_types.append(schema_type)
+                            usage_counts.append(1)
 
-                if schema_types:
-                    df = pd.DataFrame({
-                        'Schema Type': schema_types,
-                        'Count': usage_counts
-                    }).groupby('Schema Type').sum().reset_index()
+                    if schema_types:
+                        df = pd.DataFrame({
+                            'Schema Type': schema_types,
+                            'Count': usage_counts
+                        }).groupby('Schema Type').sum().reset_index()
 
-                    fig = px.bar(
-                        df,
-                        x='Schema Type',
-                        y='Count',
-                        title='Schema Usage Across Competitors',
-                        labels={'Count': 'Number of Implementations'},
-                        color='Count',
-                        color_continuous_scale='Viridis'
-                    )
-                    fig.update_layout(
-                        showlegend=False,
-                        hovermode='x',
-                        hoverlabel=dict(bgcolor="white"),
-                        margin=dict(t=50, l=0, r=0, b=0)
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("No schema usage data available from competitors")
-            except Exception as e:
-                logger.error(f"Error displaying competitor insights: {str(e)}")
-                st.error("Error displaying competitor insights")
+                        fig = px.bar(
+                            df,
+                            x='Schema Type',
+                            y='Count',
+                            title='Schema Usage Across Competitors',
+                            labels={'Count': 'Number of Implementations'},
+                            color='Count',
+                            color_continuous_scale='Viridis'
+                        )
+                        fig.update_layout(
+                            showlegend=False,
+                            hovermode='x',
+                            hoverlabel=dict(bgcolor="white"),
+                            margin=dict(t=50, l=0, r=0, b=0)
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No schema usage data available from competitors")
+                except Exception as e:
+                    logger.error(f"Error displaying competitor insights: {str(e)}")
+                    st.error("Error displaying competitor insights")
                 
     except Exception as e:
         logger.error(f"Error displaying analysis results: {str(e)}")
