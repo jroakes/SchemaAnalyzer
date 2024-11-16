@@ -101,72 +101,103 @@ def display_schema_card(schema_data: Dict[str, Any], schema_types_df, card_type:
     
     style = card_styles.get(card_type, "padding: 1rem; margin: 1rem 0; background-color: #ffffff;")
     
-    st.markdown(f"""
-        <div style="{style}">
-            <h3>{schema_type}</h3>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Display documentation references
-    display_documentation_references(schema_types_df, schema_type)
-    
-    # Display content based on card type
-    if card_type == "needs_improvement":
-        # Validation scorecard
-        with st.expander("📊 Validation Score", expanded=True):
-            st.markdown("### Validation Results")
-            if 'issues' in schema_data:
-                for issue in schema_data['issues']:
-                    st.warning(issue)
-            else:
-                st.success("No validation issues found")
+    with st.container():
+        # Header section
+        st.markdown(f"""
+            <div style="{style}">
+                <h3>{schema_type}</h3>
+            </div>
+        """, unsafe_allow_html=True)
         
-        # Missing properties compared to competitors
-        if 'competitor_properties' in schema_data:
-            with st.expander("🔄 Competitor Comparison"):
-                st.markdown("### Properties Used by Competitors")
-                for prop in schema_data.get('competitor_properties', []):
-                    st.info(f"- {prop}")
+        # Documentation references
+        display_documentation_references(schema_types_df, schema_type)
         
-        # Implementation recommendations
-        if 'recommendations' in schema_data:
-            with st.expander("💡 Recommendations"):
-                st.markdown(schema_data['recommendations'])
+        # Content based on card type
+        if card_type == "needs_improvement":
+            with st.container():
+                col1, col2 = st.columns(2)
                 
-    elif card_type == "suggested":
-        # Implementation details
-        with st.expander("📝 Implementation Guide", expanded=True):
-            if 'recommendations' in schema_data:
-                st.markdown(schema_data['recommendations'])
-            
-        # Competitor usage
-        if 'reason' in schema_data:
-            st.info(f"💡 {schema_data['reason']}")
-            
-        # Implementation template
-        with st.expander("🔧 Implementation Template"):
-            template = {
-                "@context": "https://schema.org",
-                "@type": schema_type,
-                # Add recommended properties
-                "name": "Example Name",
-                "description": "Example Description"
-            }
-            st.code(json.dumps(template, indent=2))
-            
-    else:  # Good implementation
-        # Validation scorecard
-        with st.expander("✅ Validation Score", expanded=True):
-            st.success("All validation checks passed")
-            
-        # Schema data
-        if 'key' in schema_data:
-            with st.expander("🔍 Current Implementation"):
-                try:
-                    schema_json = json.loads(schema_data['key'])
-                    st.json(schema_json)
-                except:
-                    st.code(schema_data['key'])
+                # Column 1: Validation Score and Issues
+                with col1:
+                    st.markdown("### 📊 Validation Score")
+                    st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                    if 'issues' in schema_data:
+                        for issue in schema_data['issues']:
+                            st.warning(issue)
+                    else:
+                        st.success("No validation issues found")
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Column 2: Competitor Comparison
+                with col2:
+                    st.markdown("### 🔄 Competitor Comparison")
+                    st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                    if 'competitor_properties' in schema_data:
+                        st.markdown("#### Properties Used by Competitors")
+                        for prop in schema_data.get('competitor_properties', []):
+                            st.info(f"- {prop}")
+                    else:
+                        st.info("No competitor data available")
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Recommendations section (full width)
+                st.markdown("### 💡 Recommendations")
+                st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                if 'recommendations' in schema_data:
+                    st.markdown(schema_data['recommendations'])
+                else:
+                    st.info("No recommendations available")
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+        elif card_type == "suggested":
+            with st.container():
+                col1, col2 = st.columns(2)
+                
+                # Column 1: Implementation Guide
+                with col1:
+                    st.markdown("### 📝 Implementation Guide")
+                    st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                    if 'recommendations' in schema_data:
+                        st.markdown(schema_data['recommendations'])
+                    if 'reason' in schema_data:
+                        st.info(f"💡 {schema_data['reason']}")
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Column 2: Implementation Template
+                with col2:
+                    st.markdown("### 🔧 Implementation Template")
+                    st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                    template = {
+                        "@context": "https://schema.org",
+                        "@type": schema_type,
+                        "name": "Example Name",
+                        "description": "Example Description"
+                    }
+                    st.code(json.dumps(template, indent=2))
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+        else:  # Good implementation
+            with st.container():
+                col1, col2 = st.columns(2)
+                
+                # Column 1: Validation Score
+                with col1:
+                    st.markdown("### ✅ Validation Score")
+                    st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                    st.success("All validation checks passed")
+                    st.markdown('</div>', unsafe_allow_html=True)
+                
+                # Column 2: Current Implementation
+                with col2:
+                    st.markdown("### 🔍 Current Implementation")
+                    st.markdown('<div style="border: 1px solid #ddd; padding: 1rem; border-radius: 5px;">', unsafe_allow_html=True)
+                    if 'key' in schema_data:
+                        try:
+                            schema_json = json.loads(schema_data['key'])
+                            st.json(schema_json)
+                        except:
+                            st.code(schema_data['key'])
+                    st.markdown('</div>', unsafe_allow_html=True)
 
 def display_schema_analysis_results(schema_data, validation_results, competitor_data, schema_types_df):
     """Display schema analysis results in expandable sections"""
@@ -335,29 +366,23 @@ def main():
                 validation_results = None
 
                 try:
-                    # Extract schema from URL
-                    status_text.text("🔍 Extracting schema from URL...")
-                    try:
-                        schema_data = schema_analyzer.extract_schema()
-                        progress_bar.progress(0.25)
-                    except Exception as e:
-                        logger.error(f"Error extracting schema: {str(e)}")
-                        error_container.error(f"Error extracting schema: {str(e)}")
-                        schema_data = {}
-
-                    # Get competitor data
-                    status_text.text("🔍 Analyzing competitors...")
+                    # Extract schema data
+                    status_text.text("🔍 Analyzing schema markup...")
+                    schema_data = schema_analyzer.extract_schema()
+                    progress_bar.progress(0.25)
+                    
+                    # Analyze competitors
+                    status_text.text("🔄 Analyzing competitors...")
                     try:
                         competitor_data = competitor_analyzer.analyze_competitors(
                             progress_callback=lambda p: progress_bar.progress(0.25 + p * 0.25)
                         )
-                        progress_bar.progress(0.50)
                     except Exception as e:
                         logger.error(f"Error analyzing competitors: {str(e)}")
                         error_container.error(f"Error analyzing competitors: {str(e)}")
                         competitor_data = {}
 
-                    # Validate schema with progress updates
+                    # Validate schema
                     status_text.text("✅ Validating schema...")
                     try:
                         if schema_data:
@@ -372,7 +397,7 @@ def main():
                                 error_details = []
                                 for error in validation_results['errors']:
                                     if isinstance(error, dict):
-                                        error_details.append(f"{error.get('type', 'Unknown')}: {error.get('error', 'Unknown error')}")
+                                        error_details.append(f"{error.get('type', 'Unknown')}: {error.get('message', 'Unknown error')}")
                                     else:
                                         error_details.append(str(error))
                                 error_container.error("Validation Errors:\n" + "\n".join(error_details))
@@ -386,9 +411,10 @@ def main():
                                 'good_schemas': [],
                                 'needs_improvement': [],
                                 'suggested_additions': [],
-                                'warnings': ['No schema data to validate'],
+                                'warnings': ['No schema data found on the page'],
                                 'errors': []
                             }
+                            st.warning("No schema markup found on the page")
                         progress_bar.progress(0.75)
                     except Exception as e:
                         logger.error(f"Error validating schema: {str(e)}")
@@ -408,6 +434,7 @@ def main():
                     status_text.empty()
 
                     if validation_results:
+                        # Display results
                         display_schema_analysis_results(
                             schema_data,
                             validation_results,
