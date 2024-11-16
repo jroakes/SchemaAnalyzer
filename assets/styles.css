@@ -1,61 +1,159 @@
 /* Main container styling */
 .main {
-    padding: 1rem;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 /* Header styling */
 .stTitle {
-    color: #2c3e50;
+    color: #1f1f1f;
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 2rem;
+    text-align: center;
 }
 
 /* Form styling */
-.stForm {
-    background-color: #f8f9fa;
+.url-input-form {
+    background-color: #ffffff;
     padding: 2rem;
-    border-radius: 10px;
-    margin-bottom: 2rem;
+    border-radius: 12px;
+    margin: 2rem auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    max-width: 800px;
 }
 
-/* Results container styling */
-.stMarkdown {
-    background-color: white;
-    padding: 1rem;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* Input fields */
+.stTextInput > div > div > input {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
 }
 
-/* JSON display styling */
-pre {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 5px;
-    font-size: 0.9rem;
+.stTextInput > div > div > input:focus {
+    border-color: #2979ff;
+    box-shadow: 0 0 0 2px rgba(41, 121, 255, 0.1);
 }
 
-/* Warning and info messages */
-.stWarning, .stInfo {
-    padding: 1rem;
-    border-radius: 5px;
-    margin: 1rem 0;
-}
-
-/* Plotly chart container */
-.plotly-chart-container {
-    margin: 2rem 0;
-}
-
-/* Recommendations section */
-.stSubheader {
-    color: #2c3e50;
+/* Submit button */
+.stButton > button {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background-color: #2979ff;
+    color: white;
     font-weight: 600;
-    margin: 1.5rem 0 1rem 0;
+    transition: all 0.3s ease;
 }
 
-/* Documentation references table */
-.dataframe {
-    font-size: 0.9rem;
+.stButton > button:hover {
+    background-color: #2962ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(41, 121, 255, 0.1);
+}
+
+/* Tab styling */
+.stTabs {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem;
     margin: 1rem 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Card styling */
+.schema-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.schema-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.schema-card.good {
+    border-left: 6px solid #00c853;
+}
+
+.schema-card.needs-improvement {
+    border-left: 6px solid #ffd600;
+}
+
+.schema-card.suggested {
+    border-left: 6px solid #2979ff;
+}
+
+/* Metrics styling */
+.stMetric {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+}
+
+/* Documentation references */
+.documentation-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: #f8f9fa;
+    color: #2979ff;
+    text-decoration: none;
+    margin: 0.5rem 0;
+    transition: all 0.3s ease;
+}
+
+.documentation-link:hover {
+    background: #e3f2fd;
+    transform: translateX(2px);
+}
+
+/* Progress indicators */
+.stProgress > div > div {
+    background-color: #bbdefb;
+}
+
+.stProgress > div > div > div {
+    background-color: #2979ff;
+}
+
+/* Helper text and tooltips */
+.stTooltip {
+    color: #757575;
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+}
+
+/* Status indicators */
+.status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+}
+
+.status-icon.success {
+    background-color: #00c853;
+    color: white;
+}
+
+.status-icon.warning {
+    background-color: #ffd600;
+    color: #1f1f1f;
+}
+
+.status-icon.info {
+    background-color: #2979ff;
+    color: white;
 }
