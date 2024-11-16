@@ -21,9 +21,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def main():
+def check_environment():
+    """Check if all required environment variables are set"""
+    required_vars = ['VALUESERP_API_KEY', 'GOOGLE_API_KEY']
+    missing_vars = [var for var in required_vars if not os.environ.get(var)]
+    if missing_vars:
+        raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+def initialize_app():
+    """Initialize the Streamlit application with error handling"""
     try:
-        # Page config
+        # Check environment variables
+        check_environment()
+        
+        # Configure page
         st.set_page_config(
             page_title="Schema Analysis Tool",
             page_icon="🔍",
@@ -36,6 +47,21 @@ def main():
         if css_path.exists():
             with open(css_path) as f:
                 st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+        else:
+            logger.warning("Custom CSS file not found at assets/styles.css")
+            
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize application: {str(e)}")
+        st.error(f"Application initialization failed: {str(e)}")
+        return False
+
+def main():
+    """Main application function with enhanced error handling"""
+    try:
+        # Initialize application
+        if not initialize_app():
+            return
 
         # Title and Description
         st.title("Schema.org Analysis Tool")
@@ -85,7 +111,13 @@ def main():
                 competitor_analyzer = CompetitorAnalyzer(keyword)
                 
                 # Load schema types
-                schema_types_df = pd.read_csv('supported_schema.csv')
+                try:
+                    schema_types_df = pd.read_csv('supported_schema.csv')
+                except Exception as e:
+                    logger.error(f"Failed to load schema types: {str(e)}")
+                    st.error("Failed to load schema types data. Please try again.")
+                    return
+                    
                 schema_validator = SchemaValidator(schema_types_df)
 
                 schema_data = None
