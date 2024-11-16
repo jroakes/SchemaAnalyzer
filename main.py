@@ -10,6 +10,7 @@ from schema_validator import SchemaValidator
 from utils import format_schema_data
 import plotly.graph_objects as go
 import plotly.express as px
+import time
 
 # Configure logging
 logging.basicConfig(
@@ -21,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 def display_schema_data(schema_data):
     """Display extracted schema data in a collapsible section"""
+    if not schema_data:
+        st.warning("No schema data was extracted")
+        return
+        
     with st.expander("📊 Extracted Schema Data", expanded=True):
         for schema_type, data in schema_data.items():
             st.subheader(f"Type: {schema_type}")
@@ -28,6 +33,10 @@ def display_schema_data(schema_data):
 
 def display_validation_results(validation_results):
     """Display validation results with color coding"""
+    if not validation_results:
+        st.warning("No validation results available")
+        return
+        
     with st.expander("✅ Validation Results", expanded=True):
         # Valid Types
         if validation_results['valid_types']:
@@ -55,11 +64,11 @@ def display_validation_results(validation_results):
 
 def display_competitor_insights(competitor_data):
     """Display competitor insights using charts"""
+    if not competitor_data:
+        st.warning("No competitor data available")
+        return
+        
     with st.expander("🔍 Competitor Insights", expanded=True):
-        if not competitor_data:
-            st.warning("No competitor data available")
-            return
-
         # Create usage statistics visualization
         schema_types = []
         usage_counts = []
@@ -81,9 +90,15 @@ def display_competitor_insights(competitor_data):
                 title='Schema Usage Across Competitors'
             )
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No schema usage data available from competitors")
 
 def display_gpt_recommendations(validation_results):
     """Display GPT-powered recommendations"""
+    if not validation_results or 'gpt_analysis' not in validation_results:
+        st.warning("No GPT recommendations available")
+        return
+        
     with st.expander("💡 GPT Recommendations", expanded=True):
         for schema_type, analysis in validation_results['gpt_analysis'].items():
             st.subheader(f"Analysis for {schema_type}")
@@ -180,46 +195,81 @@ def main():
                 competitor_analyzer = CompetitorAnalyzer(keyword)
                 schema_validator = SchemaValidator(schema_types_df)
 
-                # Create progress bar
+                # Create progress containers
                 progress_bar = st.progress(0)
                 status_text = st.empty()
+                error_container = st.empty()
+                
+                # Initialize result containers
+                schema_data = None
+                competitor_data = None
+                validation_results = None
 
                 try:
                     # Extract schema from URL
-                    status_text.text("Extracting schema from URL...")
-                    schema_data = schema_analyzer.extract_schema()
-                    progress_bar.progress(0.25)
+                    status_text.text("🔍 Extracting schema from URL...")
+                    try:
+                        schema_data = schema_analyzer.extract_schema()
+                        progress_bar.progress(0.25)
+                    except Exception as e:
+                        logger.error(f"Error extracting schema: {str(e)}")
+                        error_container.error(f"Error extracting schema: {str(e)}")
+                        schema_data = {}
 
                     # Get competitor data
-                    status_text.text("Analyzing competitors...")
-                    competitor_data = competitor_analyzer.analyze_competitors(
-                        progress_callback=lambda p: progress_bar.progress(0.25 + p * 0.25)
-                    )
-                    progress_bar.progress(0.50)
+                    status_text.text("🔍 Analyzing competitors...")
+                    try:
+                        competitor_data = competitor_analyzer.analyze_competitors(
+                            progress_callback=lambda p: progress_bar.progress(0.25 + p * 0.25)
+                        )
+                        progress_bar.progress(0.50)
+                    except Exception as e:
+                        logger.error(f"Error analyzing competitors: {str(e)}")
+                        error_container.error(f"Error analyzing competitors: {str(e)}")
+                        competitor_data = {}
 
                     # Validate schema
-                    status_text.text("Validating schema...")
-                    validation_results = schema_validator.validate_schema(schema_data)
-                    progress_bar.progress(0.75)
+                    status_text.text("✅ Validating schema...")
+                    try:
+                        if schema_data:
+                            validation_results = schema_validator.validate_schema(schema_data)
+                        else:
+                            validation_results = {
+                                'valid_types': [],
+                                'invalid_types': [],
+                                'warnings': ['No schema data to validate'],
+                                'errors': []
+                            }
+                        progress_bar.progress(0.75)
+                    except Exception as e:
+                        logger.error(f"Error validating schema: {str(e)}")
+                        error_container.error(f"Error validating schema: {str(e)}")
+                        validation_results = None
 
                     # Analysis complete
                     progress_bar.progress(1.0)
-                    status_text.text("Analysis complete!")
+                    status_text.text("✨ Analysis complete!")
+                    time.sleep(1)  # Give user time to see completion
+                    status_text.empty()
 
                     # Display results
                     st.markdown("## Analysis Results")
 
                     # Display extracted schema
-                    display_schema_data(schema_data)
-
+                    if schema_data is not None:
+                        display_schema_data(schema_data)
+                    
                     # Display validation results
-                    display_validation_results(validation_results)
-
+                    if validation_results is not None:
+                        display_validation_results(validation_results)
+                    
                     # Display competitor insights
-                    display_competitor_insights(competitor_data)
-
+                    if competitor_data is not None:
+                        display_competitor_insights(competitor_data)
+                    
                     # Display GPT recommendations
-                    display_gpt_recommendations(validation_results)
+                    if validation_results is not None:
+                        display_gpt_recommendations(validation_results)
 
                 except Exception as e:
                     logger.error(f"Error during analysis: {str(e)}")

@@ -4,6 +4,7 @@ import streamlit as st
 from gpt_schema_analyzer import GPTSchemaAnalyzer
 import logging
 import json
+from utils import clean_schema_type
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,29 +46,51 @@ class SchemaValidator:
         }
         
         try:
+            # Input type validation
             if not isinstance(current_schema, dict):
                 raise ValueError("Input schema must be a dictionary")
 
+            if not current_schema:
+                validation_results['warnings'].append("Empty schema provided")
+                return validation_results
+
             for schema_type, schema_data in current_schema.items():
                 try:
-                    # Convert schema_data to string if it's a dictionary
-                    schema_data_str = json.dumps(schema_data) if isinstance(schema_data, dict) else str(schema_data)
+                    # Type checking for schema_data
+                    if not isinstance(schema_data, (dict, str)):
+                        validation_results['errors'].append(f"Invalid schema data type for {schema_type}: expected dict or string")
+                        continue
+
+                    # Normalize schema type
+                    normalized_type = clean_schema_type(schema_type)
+                    
+                    # JSON serialization with error handling
+                    try:
+                        if isinstance(schema_data, dict):
+                            schema_data_str = json.dumps(schema_data)
+                        else:
+                            schema_data_str = str(schema_data)
+                            # Validate if string is valid JSON
+                            json.loads(schema_data_str)
+                    except json.JSONDecodeError as e:
+                        validation_results['errors'].append(f"Invalid JSON for {normalized_type}: {str(e)}")
+                        continue
                     
                     # Basic type validation
-                    if schema_type in self.schema_types_df['Name'].values:
-                        validation_results['valid_types'].append(schema_type)
+                    if normalized_type in self.schema_types_df['Name'].values:
+                        validation_results['valid_types'].append(normalized_type)
                         
                         # JSON-LD syntax validation
                         syntax_validation = self.gpt_analyzer.validate_json_ld(schema_data)
-                        validation_results['syntax_validation'][schema_type] = syntax_validation
+                        validation_results['syntax_validation'][normalized_type] = syntax_validation
                         
                         # GPT-powered analysis
                         gpt_analysis = self.gpt_analyzer.analyze_schema_implementation(schema_data_str)
-                        validation_results['gpt_analysis'][schema_type] = gpt_analysis
+                        validation_results['gpt_analysis'][normalized_type] = gpt_analysis
                         
                         # Property recommendations
-                        prop_recommendations = self.gpt_analyzer.generate_property_recommendations(schema_type)
-                        validation_results['property_recommendations'][schema_type] = prop_recommendations
+                        prop_recommendations = self.gpt_analyzer.generate_property_recommendations(normalized_type)
+                        validation_results['property_recommendations'][normalized_type] = prop_recommendations
                         
                         # Add warnings and errors from validations
                         if syntax_validation.get('warnings'):
@@ -75,8 +98,8 @@ class SchemaValidator:
                         if syntax_validation.get('errors'):
                             validation_results['errors'].extend(syntax_validation['errors'])
                     else:
-                        validation_results['invalid_types'].append(schema_type)
-                        validation_results['errors'].append(f"Invalid schema type: {schema_type}")
+                        validation_results['invalid_types'].append(normalized_type)
+                        validation_results['errors'].append(f"Invalid schema type: {normalized_type}")
                         
                 except Exception as e:
                     logger.error(f"Error processing schema type {schema_type}: {str(e)}")
@@ -88,11 +111,11 @@ class SchemaValidator:
             validation_results['errors'].append(f"Schema validation error: {str(e)}")
             
         return validation_results
-        
+
     def get_missing_schema_types(self, current_schema):
         """Identify potentially beneficial missing schema types"""
         try:
-            current_types = set(current_schema.keys())
+            current_types = set(clean_schema_type(t) for t in current_schema.keys())
             missing_types = []
             
             for _, row in self.schema_types_df.iterrows():
@@ -118,11 +141,11 @@ class SchemaValidator:
         
         for schema_type, schema_data in current_schema.items():
             try:
-                # Convert schema_data to string for analysis
+                normalized_type = clean_schema_type(schema_type)
                 schema_data_str = json.dumps(schema_data) if isinstance(schema_data, dict) else str(schema_data)
                 analysis = self.gpt_analyzer.analyze_schema_implementation(schema_data_str)
                 
-                rich_results[schema_type] = {
+                rich_results[normalized_type] = {
                     'potential': analysis.get('recommendations', ''),
                     'current_implementation': analysis.get('documentation_analysis', ''),
                     'competitor_insights': analysis.get('competitor_insights', '')
@@ -130,7 +153,7 @@ class SchemaValidator:
                 
             except Exception as e:
                 logger.error(f"Error analyzing rich results for {schema_type}: {str(e)}")
-                rich_results[schema_type] = {
+                rich_results[normalized_type] = {
                     'error': f"Analysis failed: {str(e)}"
                 }
                 
