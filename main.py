@@ -71,6 +71,21 @@ if submitted and url and keyword:
         competitor_data = competitor_analyzer.analyze_competitors(progress_callback=update_competitor_progress)
         competitor_progress.progress(1.0, text="Competitor analysis complete!")
         
+        # Display skipped URLs warning if any
+        skipped_urls = competitor_analyzer.get_skipped_urls()
+        if skipped_urls:
+            with st.expander("⚠️ Some competitor analyses were skipped", expanded=True):
+                st.markdown("""
+                Some competitor websites couldn't be analyzed. This is normal and can happen due to:
+                - Website security measures blocking automated access
+                - Rate limiting
+                - Technical issues
+                
+                The analysis will continue with the successfully analyzed websites.
+                """)
+                for url, reason in skipped_urls.items():
+                    st.warning(f"**{url}**: {reason}")
+        
         # Validate schema
         validation_results = schema_validator.validate_schema(current_schema)
         
@@ -101,35 +116,49 @@ if submitted and url and keyword:
         with col2:
             st.subheader("Competitor Schema Usage")
             
-            # Create responsive visualization
-            competitor_stats = competitor_analyzer.get_schema_usage_stats()
-            if competitor_stats:
-                fig = go.Figure()
+            if not competitor_data:
+                st.warning("No competitor data could be analyzed. This might be due to access restrictions or rate limiting.")
+            else:
+                # Show analysis coverage
+                total_competitors = len(competitor_analyzer.get_competitor_urls())
+                analyzed_competitors = len(competitor_data)
+                coverage = (analyzed_competitors / total_competitors) * 100
                 
-                fig.add_trace(go.Bar(
-                    x=[stat['schema_type'] for stat in competitor_stats],
-                    y=[stat['usage_count'] for stat in competitor_stats],
-                    text=[f"{stat['percentage']:.1f}%" for stat in competitor_stats],
-                    textposition='auto',
-                    hovertemplate="<b>%{x}</b><br>" +
-                                "Count: %{y}<br>" +
-                                "Usage: %{text}<br>" +
-                                "<extra></extra>"
-                ))
-                
-                fig.update_layout(
-                    title='Popular Schema Types Among Competitors',
-                    xaxis_title='Schema Type',
-                    yaxis_title='Usage Count',
-                    template='plotly_white',
-                    height=400,
-                    margin=dict(t=30, l=10, r=10, b=10),
-                    showlegend=False
+                st.metric(
+                    "Analysis Coverage",
+                    f"{analyzed_competitors}/{total_competitors} competitors",
+                    f"{coverage:.1f}% analyzed"
                 )
                 
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No competitor data available")
+                # Create responsive visualization
+                competitor_stats = competitor_analyzer.get_schema_usage_stats()
+                if competitor_stats:
+                    fig = go.Figure()
+                    
+                    fig.add_trace(go.Bar(
+                        x=[stat['schema_type'] for stat in competitor_stats],
+                        y=[stat['usage_count'] for stat in competitor_stats],
+                        text=[f"{stat['percentage']:.1f}%" for stat in competitor_stats],
+                        textposition='auto',
+                        hovertemplate="<b>%{x}</b><br>" +
+                                    "Count: %{y}<br>" +
+                                    "Usage: %{text}<br>" +
+                                    "<extra></extra>"
+                    ))
+                    
+                    fig.update_layout(
+                        title='Popular Schema Types Among Competitors',
+                        xaxis_title='Schema Type',
+                        yaxis_title='Usage Count',
+                        template='plotly_white',
+                        height=400,
+                        margin=dict(t=30, l=10, r=10, b=10),
+                        showlegend=False
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("No schema data found in analyzed competitors")
 
         # Recommendations
         st.header("Recommendations")
