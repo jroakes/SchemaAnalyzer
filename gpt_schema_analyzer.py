@@ -21,9 +21,9 @@ class GPTSchemaAnalyzer:
         """Simple rate limiting"""
         time.sleep(1)  # Basic rate limiting
         
-    def _create_analysis_prompt(self, schema_data: Dict, analysis_type: str) -> str:
+    def _create_analysis_prompt(self, schema_data: str, analysis_type: str) -> str:
         """Create prompts for different types of analysis"""
-        base_prompt = f"Analyze the following schema.org markup:\n{json.dumps(schema_data, indent=2)}\n\n"
+        base_prompt = f"Analyze the following schema.org markup:\n{schema_data}\n\n"
         
         prompts = {
             'documentation': base_prompt + "Compare this implementation against Google's official documentation and Schema.org specifications. Identify any missing required properties or potential improvements.",
@@ -34,9 +34,13 @@ class GPTSchemaAnalyzer:
         return prompts.get(analysis_type, base_prompt)
         
     @lru_cache(maxsize=100)
-    def analyze_schema_implementation(self, schema_data: Dict) -> Dict[str, Any]:
+    def analyze_schema_implementation(self, schema_data: str) -> Dict[str, Any]:
         """Analyze schema implementation using GPT"""
         try:
+            # Ensure schema_data is a string for caching
+            if isinstance(schema_data, dict):
+                schema_data = json.dumps(schema_data)
+                
             analysis_results = {}
             
             for analysis_type in ['documentation', 'competitors', 'recommendations']:
@@ -44,18 +48,23 @@ class GPTSchemaAnalyzer:
                 
                 self._rate_limit_delay()
                 
-                response = openai.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "system", "content": "You are a Schema.org and SEO expert. Analyze the given schema markup and provide detailed insights."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=1000
-                )
-                
-                analysis_results[analysis_type] = response.choices[0].message.content
-                
+                try:
+                    response = openai.chat.completions.create(
+                        model="gpt-4",
+                        messages=[
+                            {"role": "system", "content": "You are a Schema.org and SEO expert. Analyze the given schema markup and provide detailed insights."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=1000
+                    )
+                    
+                    analysis_results[analysis_type] = response.choices[0].message.content
+                    
+                except Exception as e:
+                    logger.error(f"Error in GPT API call: {str(e)}")
+                    analysis_results[analysis_type] = f"Analysis failed: {str(e)}"
+            
             return {
                 'documentation_analysis': analysis_results['documentation'],
                 'competitor_insights': analysis_results['competitors'],
@@ -79,6 +88,15 @@ class GPTSchemaAnalyzer:
                 'errors': [],
                 'warnings': []
             }
+            
+            # Convert dict to string if needed
+            if isinstance(schema_data, dict):
+                try:
+                    json.dumps(schema_data)  # Validate JSON serialization
+                except Exception as e:
+                    validation_results['is_valid'] = False
+                    validation_results['errors'].append(f"Invalid JSON structure: {str(e)}")
+                    return validation_results
             
             # Basic structure validation
             if not isinstance(schema_data, dict):
@@ -119,21 +137,29 @@ class GPTSchemaAnalyzer:
 3. Properties that enable rich results
 4. Common implementation mistakes to avoid"""
 
-            response = openai.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "You are a Schema.org expert. Provide detailed property recommendations."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1000
-            )
+            try:
+                response = openai.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": "You are a Schema.org expert. Provide detailed property recommendations."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                
+                return {
+                    'success': True,
+                    'recommendations': response.choices[0].message.content
+                }
             
-            return {
-                'success': True,
-                'recommendations': response.choices[0].message.content
-            }
-            
+            except Exception as e:
+                logger.error(f"Error in GPT API call: {str(e)}")
+                return {
+                    'success': False,
+                    'error': f"Failed to generate recommendations: {str(e)}"
+                }
+                
         except Exception as e:
             logger.error(f"Error generating property recommendations: {str(e)}")
             return {
