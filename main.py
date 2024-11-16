@@ -214,8 +214,28 @@ def main():
                             if validation_results.get('good_schemas'):
                                 st.subheader("✅ Good Implementations")
                                 for schema in validation_results['good_schemas']:
-                                    with st.expander(f"Schema: {schema.get('type', 'Unknown')}"):
-                                        st.json(schema)
+                                    schema_type = schema.get('type', 'Unknown')
+                                    with st.expander(f"Schema: {schema_type}"):
+                                        # Add documentation links
+                                        schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
+                                        if not schema_row.empty:
+                                            col1, col2 = st.columns(2)
+                                            with col1:
+                                                if not pd.isna(schema_row['Google Doc URL'].iloc[0]):
+                                                    st.markdown(f"[📚 Google Developers Guide]({schema_row['Google Doc URL'].iloc[0]})")
+                                            with col2:
+                                                if not pd.isna(schema_row['Schema URL'].iloc[0]):
+                                                    st.markdown(f"[🔗 Schema.org Reference]({schema_row['Schema URL'].iloc[0]})")
+                                        
+                                        # Display formatted implementation details
+                                        st.markdown("### Implementation Details")
+                                        if isinstance(schema.get('recommendations'), str):
+                                            st.markdown(schema['recommendations'])
+                                        else:
+                                            st.write("Schema Properties:")
+                                            for key, value in schema.items():
+                                                if key not in ['type', 'recommendations', 'issues']:
+                                                    st.markdown(f"**{key}**: {value}")
 
                             if validation_results.get('needs_improvement'):
                                 st.subheader("🔧 Needs Improvement")
