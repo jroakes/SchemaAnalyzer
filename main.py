@@ -219,7 +219,20 @@ def main():
                             st.subheader("💡 Recommendations")
                             if validation_results.get('suggested_additions'):
                                 for suggestion in validation_results['suggested_additions']:
-                                    with st.expander(f"Add {suggestion.get('type', 'Unknown')} Schema"):
+                                    schema_type = suggestion.get('type', 'Unknown')
+                                    with st.expander(f"Add {schema_type} Schema"):
+                                        # Add documentation links
+                                        schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
+                                        if not schema_row.empty:
+                                            col1, col2 = st.columns(2)
+                                            with col1:
+                                                if not pd.isna(schema_row['Google Doc URL'].iloc[0]):
+                                                    st.markdown(f"[📚 Google Developers Guide]({schema_row['Google Doc URL'].iloc[0]})")
+                                            with col2:
+                                                if not pd.isna(schema_row['Schema URL'].iloc[0]):
+                                                    st.markdown(f"[🔗 Schema.org Reference]({schema_row['Schema URL'].iloc[0]})")
+                                        
+                                        # Display recommendations
                                         rec_data = suggestion.get('recommendations', {}).get('recommendations', '')
                                         if isinstance(rec_data, str):
                                             st.markdown(rec_data)
