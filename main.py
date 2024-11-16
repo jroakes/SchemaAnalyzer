@@ -357,50 +357,92 @@ def main():
                         error_container.error(f"Error analyzing competitors: {str(e)}")
                         competitor_data = {}
 
-                    # Validate schema
+                    # Validate schema with progress updates
                     status_text.text("✅ Validating schema...")
                     try:
                         if schema_data:
                             validation_results = schema_validator.validate_schema(schema_data)
+                            
+                            # Show validation progress
+                            validation_progress = validation_results.get('validation_progress', 0)
+                            progress_bar.progress(0.5 + (validation_progress / 100) * 0.25)
+                            
+                            # Display validation status updates
+                            if validation_results.get('errors'):
+                                error_details = []
+                                for error in validation_results['errors']:
+                                    if isinstance(error, dict):
+                                        error_details.append(f"{error.get('type', 'Unknown')}: {error.get('error', 'Unknown error')}")
+                                    else:
+                                        error_details.append(str(error))
+                                error_container.error("Validation Errors:\n" + "\n".join(error_details))
+                            
+                            if validation_results.get('warnings'):
+                                with st.expander("⚠️ Validation Warnings", expanded=True):
+                                    for warning in validation_results['warnings']:
+                                        st.warning(warning)
                         else:
                             validation_results = {
-                                'valid_types': [],
-                                'invalid_types': [],
+                                'good_schemas': [],
+                                'needs_improvement': [],
+                                'suggested_additions': [],
                                 'warnings': ['No schema data to validate'],
                                 'errors': []
                             }
                         progress_bar.progress(0.75)
                     except Exception as e:
                         logger.error(f"Error validating schema: {str(e)}")
-                        error_container.error(f"Error validating schema: {str(e)}")
+                        error_container.error(f"""
+                            Schema Validation Error:
+                            Type: {type(e).__name__}
+                            Details: {str(e)}
+                            
+                            Please ensure your schema data is properly formatted and try again.
+                        """)
                         validation_results = None
 
                     # Analysis complete
                     progress_bar.progress(1.0)
-                    status_text.text("✨ Analysis complete!")
+                    status_text.text("✅ Analysis complete!")
                     time.sleep(1)  # Give user time to see completion
                     status_text.empty()
 
-                    # Display results using new functions
-                    display_schema_analysis_results(
-                        schema_data,
-                        validation_results,
-                        competitor_data,
-                        schema_types_df
-                    )
+                    if validation_results:
+                        display_schema_analysis_results(
+                            schema_data,
+                            validation_results,
+                            competitor_data,
+                            schema_types_df
+                        )
 
                 except Exception as e:
                     logger.error(f"Error during analysis: {str(e)}")
-                    st.error(f"An error occurred during analysis: {str(e)}")
-                    progress_bar.empty()
-                    status_text.empty()
+                    error_container.error(f"""
+                        An error occurred during analysis:
+                        Type: {type(e).__name__}
+                        Details: {str(e)}
+                        
+                        Please try again or contact support if the issue persists.
+                    """)
 
-        else:
-            st.info("Enter a URL and keyword to begin analysis")
+        # Add monitoring for application state
+        try:
+            if not hasattr(st.session_state, 'app_initialized'):
+                logger.info("Initializing application state")
+                st.session_state.app_initialized = True
+        except Exception as e:
+            logger.error(f"Error initializing application state: {str(e)}")
+            st.error("Error initializing application. Please refresh the page.")
 
     except Exception as e:
-        logger.error(f"Critical error in main application: {str(e)}")
-        st.error(f"An error occurred while running the application: {str(e)}")
+        logger.error(f"Critical application error: {str(e)}")
+        st.error(f"""
+            A critical error occurred:
+            Type: {type(e).__name__}
+            Details: {str(e)}
+            
+            Please refresh the page or contact support.
+        """)
 
 if __name__ == "__main__":
     main()

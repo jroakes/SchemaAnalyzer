@@ -5,7 +5,7 @@ from gpt_schema_analyzer import GPTSchemaAnalyzer
 import logging
 import json
 from utils import clean_schema_type
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -16,15 +16,29 @@ class SchemaValidator:
         self.schema_types_df = schema_types_df
         self.gpt_analyzer = GPTSchemaAnalyzer()
 
-    def _make_dict_key(self, data: Dict) -> str:
-        """Convert dictionary to a stable string key"""
+    def _make_dict_key(self, data: Union[Dict, Any]) -> str:
+        """Convert dictionary to a stable string key with proper nested handling"""
         try:
-            # Sort dictionary items to ensure consistent serialization
-            sorted_dict = dict(sorted(data.items()))
-            return json.dumps(sorted_dict, sort_keys=True)
+            if not isinstance(data, (dict, list)):
+                return str(data)
+
+            def serialize_nested(obj: Any) -> Any:
+                """Helper function to handle nested structures"""
+                if isinstance(obj, dict):
+                    return {k: serialize_nested(v) for k, v in sorted(obj.items())}
+                elif isinstance(obj, list):
+                    return [serialize_nested(item) for item in sorted(obj, key=str)]
+                elif isinstance(obj, (int, float, str, bool, type(None))):
+                    return obj
+                else:
+                    return str(obj)
+
+            serialized_data = serialize_nested(data)
+            return json.dumps(serialized_data, sort_keys=True)
         except Exception as e:
             logger.error(f"Error creating dictionary key: {str(e)}")
-            return str(hash(str(data)))
+            # Fallback to string representation with error indication
+            return f"error_key_{hash(str(data))}"
 
     @lru_cache(maxsize=100)
     def _fetch_schema_org_spec(self, schema_type: str) -> Optional[Dict[str, Any]]:
@@ -44,7 +58,7 @@ class SchemaValidator:
             return None
 
     def validate_schema(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate schema implementation with enhanced categorization"""
+        """Validate schema implementation with enhanced error handling and progress tracking"""
         validation_results = {
             'good_schemas': [],
             'needs_improvement': [],
@@ -52,25 +66,34 @@ class SchemaValidator:
             'all_types': [],
             'competitor_recommendations': [],
             'errors': [],
-            'warnings': []
+            'warnings': [],
+            'validation_progress': 0
         }
 
         try:
             if not isinstance(current_schema, dict):
-                raise ValueError("Input schema must be a dictionary")
+                raise ValueError(f"Input schema must be a dictionary, got {type(current_schema)}")
 
             if not current_schema:
                 validation_results['warnings'].append("Empty schema provided")
                 return validation_results
 
+            total_schemas = len(current_schema)
+            processed_schemas = 0
+
             # Process each schema type
             for schema_type, schema_data in current_schema.items():
                 try:
+                    # Update progress
+                    processed_schemas += 1
+                    validation_results['validation_progress'] = (processed_schemas / total_schemas) * 100
+
+                    # Type validation for schema_data
+                    if not isinstance(schema_data, (dict, str)):
+                        raise TypeError(f"Schema data must be a dictionary or string, got {type(schema_data)}")
+
                     # Create stable key for dictionary values
-                    if isinstance(schema_data, dict):
-                        dict_key = self._make_dict_key(schema_data)
-                    else:
-                        dict_key = str(schema_data)
+                    dict_key = self._make_dict_key(schema_data)
 
                     # Clean and validate schema type
                     cleaned_type = clean_schema_type(schema_type)
@@ -87,16 +110,28 @@ class SchemaValidator:
 
                     # Validate schema data
                     if isinstance(schema_data, dict):
-                        # Check required properties
+                        # Check required properties with detailed error messages
                         if '@context' not in schema_data:
-                            schema_validation['issues'].append("Missing @context property")
+                            schema_validation['issues'].append({
+                                'severity': 'error',
+                                'message': "Missing required @context property",
+                                'suggestion': "Add '@context': 'https://schema.org'"
+                            })
                             has_errors = True
                         elif schema_data['@context'] not in ['https://schema.org', 'http://schema.org']:
-                            schema_validation['issues'].append("Non-standard @context value")
+                            schema_validation['issues'].append({
+                                'severity': 'warning',
+                                'message': f"Non-standard @context value: {schema_data['@context']}",
+                                'suggestion': "Use 'https://schema.org' as the @context value"
+                            })
                             has_warnings = True
 
                         if '@type' not in schema_data:
-                            schema_validation['issues'].append("Missing @type property")
+                            schema_validation['issues'].append({
+                                'severity': 'error',
+                                'message': "Missing required @type property",
+                                'suggestion': f"Add '@type': '{cleaned_type}'"
+                            })
                             has_errors = True
 
                         # Get recommendations
@@ -108,7 +143,11 @@ class SchemaValidator:
                                 has_warnings = True
                             schema_validation['recommendations'] = recommendations['recommendations']
                         else:
-                            schema_validation['issues'].append("Could not fetch recommendations")
+                            schema_validation['issues'].append({
+                                'severity': 'warning',
+                                'message': "Could not fetch property recommendations",
+                                'details': recommendations.get('error', 'Unknown error')
+                            })
                             has_warnings = True
 
                         # Categorize the schema
@@ -123,12 +162,20 @@ class SchemaValidator:
                         validation_results['needs_improvement'].append({
                             'type': cleaned_type,
                             'key': dict_key,
-                            'issues': ["Schema data is not a dictionary"]
+                            'issues': [{
+                                'severity': 'error',
+                                'message': "Schema data is not a dictionary",
+                                'suggestion': "Convert schema data to proper JSON-LD format"
+                            }]
                         })
 
                 except Exception as e:
                     logger.error(f"Error processing schema type {schema_type}: {str(e)}")
-                    validation_results['errors'].append(f"Error processing {schema_type}: {str(e)}")
+                    validation_results['errors'].append({
+                        'type': schema_type,
+                        'error': str(e),
+                        'details': f"Error occurred while processing schema type: {type(e).__name__}"
+                    })
 
             # Add competitor-based suggestions
             competitor_types = self._get_competitor_schema_types()
@@ -143,12 +190,16 @@ class SchemaValidator:
 
         except Exception as e:
             logger.error(f"Error in schema validation: {str(e)}")
-            validation_results['errors'].append(f"Schema validation error: {str(e)}")
+            validation_results['errors'].append({
+                'error': str(e),
+                'type': type(e).__name__,
+                'details': "Global validation error occurred"
+            })
 
         return validation_results
 
-    def _check_recommended_properties(self, schema_data: Dict[str, Any], recommendations: Dict[str, Any]) -> List[str]:
-        """Check for missing recommended properties"""
+    def _check_recommended_properties(self, schema_data: Dict[str, Any], recommendations: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Check for missing recommended properties with detailed feedback"""
         missing_props = []
         try:
             # Parse recommendations text for required and recommended properties
@@ -159,15 +210,22 @@ class SchemaValidator:
                     if '-' in line:
                         prop = line.split('-')[1].strip().split(' ')[0]
                         if prop and prop not in schema_data:
-                            missing_props.append(f"Missing required property: {prop}")
+                            missing_props.append({
+                                'severity': 'warning',
+                                'message': f"Missing recommended property: {prop}",
+                                'suggestion': f"Consider adding the '{prop}' property to improve completeness"
+                            })
         except Exception as e:
             logger.error(f"Error checking recommended properties: {str(e)}")
+            missing_props.append({
+                'severity': 'info',
+                'message': "Error checking recommended properties",
+                'details': str(e)
+            })
         return missing_props
 
     def _get_competitor_schema_types(self) -> List[str]:
         """Get list of schema types commonly used by competitors"""
-        # This would be populated from competitor analysis
-        # For now, returning a sample list
         return ['Organization', 'WebSite', 'BreadcrumbList']
 
     def get_schema_description(self, schema_type: str) -> Optional[str]:
