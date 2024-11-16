@@ -1,6 +1,6 @@
 import os
 import google.generativeai as genai
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import json
 import time
 from functools import lru_cache
@@ -27,7 +27,7 @@ class GPTSchemaAnalyzer:
         time.sleep(1)  # Basic rate limiting
         
     def _convert_to_json_string(self, data: Any) -> Optional[str]:
-        """Convert input data to JSON string with error handling"""
+        """Convert input data to JSON string with improved error handling"""
         try:
             if isinstance(data, str):
                 # Validate if string is valid JSON
@@ -36,54 +36,82 @@ class GPTSchemaAnalyzer:
             elif isinstance(data, dict):
                 return json.dumps(data)
             else:
-                raise ValueError(f"Unsupported data type: {type(data)}")
+                raise ValueError(f"Unsupported data type: {type(data)}. Expected dict or valid JSON string.")
         except json.JSONDecodeError as e:
-            logger.error(f"JSON conversion error: {str(e)}")
+            logger.error(f"JSON conversion error: Invalid JSON format - {str(e)}")
             return None
         except Exception as e:
-            logger.error(f"Error converting data to JSON: {str(e)}")
+            logger.error(f"Error converting data to JSON: {type(data)} - {str(e)}")
             return None
         
     def _create_analysis_prompt(self, schema_data: str, analysis_type: str) -> str:
-        """Create prompts for different types of analysis"""
-        base_prompt = f"Analyze the following schema.org markup:\n{schema_data}\n\n"
+        """Create prompts for different types of analysis with improved context"""
+        base_prompt = f"""Analyze the following schema.org markup and provide a detailed response:
+{schema_data}
+
+Focus on the following aspects:
+1. Completeness of implementation
+2. Conformance to Schema.org standards
+3. Potential for rich results
+4. SEO impact
+
+"""
         
         prompts = {
-            'documentation': base_prompt + "Compare this implementation against Google's official documentation and Schema.org specifications. Identify any missing required properties or potential improvements.",
-            'competitors': base_prompt + "Analyze this schema implementation in comparison to common competitor implementations. Identify unique approaches and potential improvements.",
-            'recommendations': base_prompt + "Generate specific recommendations for improving this schema markup, focusing on SEO impact and rich result potential."
+            'documentation': base_prompt + """Compare this implementation against Google's official documentation and Schema.org specifications:
+1. List all missing required properties
+2. Identify recommended but optional properties
+3. Point out any non-standard implementations
+4. Suggest specific improvements""",
+
+            'competitors': base_prompt + """Analyze this schema implementation from a competitive perspective:
+1. Identify unique approaches
+2. List commonly used properties by competitors
+3. Highlight potential competitive advantages
+4. Suggest improvements based on industry standards""",
+
+            'recommendations': base_prompt + """Generate specific recommendations for improving this schema markup:
+1. Priority improvements for SEO impact
+2. Changes needed for rich result eligibility
+3. Advanced property implementations
+4. Best practices and optimization tips"""
         }
         
         return prompts.get(analysis_type, base_prompt)
 
     @backoff.on_exception(
         backoff.expo,
-        (Exception,),  # Handle all exceptions for now, can be refined later
-        max_tries=3
+        (Exception,),
+        max_tries=3,
+        giveup=lambda e: isinstance(e, ValueError)
     )
     def _make_gemini_request(self, prompt: str) -> str:
-        """Make Gemini API request with retry logic"""
+        """Make Gemini API request with improved retry logic and error handling"""
         try:
             response = self.model.generate_content(prompt)
             if response.text:
                 return response.text
-            return "No response generated"
+            return "No response generated from the model"
         except Exception as e:
-            logger.error(f"Gemini API request failed: {str(e)}")
+            logger.error(f"Gemini API request failed: {type(e).__name__} - {str(e)}")
             raise
         
     @lru_cache(maxsize=100)
-    def analyze_schema_implementation(self, schema_data: Any) -> Dict[str, Any]:
-        """Analyze schema implementation using Gemini with improved error handling"""
+    def analyze_schema_implementation(self, schema_data: Union[Dict, str]) -> Dict[str, Any]:
+        """Analyze schema implementation with improved type checking and error handling"""
         try:
+            # Type validation and conversion
+            if not isinstance(schema_data, (dict, str)):
+                raise ValueError(f"Invalid schema_data type: {type(schema_data)}. Expected dict or string.")
+
             # Convert input to JSON string
             schema_str = self._convert_to_json_string(schema_data)
             if not schema_str:
                 return {
-                    'error': "Failed to process schema data",
-                    'documentation_analysis': "Analysis unavailable",
-                    'competitor_insights': "Analysis unavailable",
-                    'recommendations': "Analysis unavailable"
+                    'error': "Failed to process schema data: Invalid format",
+                    'documentation_analysis': "Analysis unavailable - Invalid input format",
+                    'competitor_insights': "Analysis unavailable - Invalid input format",
+                    'recommendations': "Analysis unavailable - Invalid input format"
                 }
             
             analysis_results = {}
@@ -97,8 +125,9 @@ class GPTSchemaAnalyzer:
                     analysis_results[analysis_type] = result
                     
                 except Exception as e:
-                    logger.error(f"Error in Gemini API call for {analysis_type}: {str(e)}")
-                    analysis_results[analysis_type] = f"Analysis failed: {str(e)}"
+                    error_msg = f"Analysis failed for {analysis_type}: {type(e).__name__} - {str(e)}"
+                    logger.error(error_msg)
+                    analysis_results[analysis_type] = error_msg
             
             return {
                 'documentation_analysis': analysis_results['documentation'],
@@ -107,16 +136,17 @@ class GPTSchemaAnalyzer:
             }
             
         except Exception as e:
-            logger.error(f"Error in Gemini analysis: {str(e)}")
+            error_msg = f"Schema analysis failed: {type(e).__name__} - {str(e)}"
+            logger.error(error_msg)
             return {
-                'error': f"Failed to analyze schema: {str(e)}",
-                'documentation_analysis': "Analysis unavailable",
-                'competitor_insights': "Analysis unavailable",
-                'recommendations': "Analysis unavailable"
+                'error': error_msg,
+                'documentation_analysis': "Analysis unavailable due to error",
+                'competitor_insights': "Analysis unavailable due to error",
+                'recommendations': "Analysis unavailable due to error"
             }
 
     def validate_json_ld(self, schema_data: Dict) -> Dict[str, Any]:
-        """Validate JSON-LD syntax and structure"""
+        """Validate JSON-LD syntax and structure with improved validation"""
         try:
             validation_results = {
                 'is_valid': True,
@@ -124,22 +154,23 @@ class GPTSchemaAnalyzer:
                 'warnings': []
             }
             
-            # Convert dict to string if needed
-            if isinstance(schema_data, dict):
-                try:
-                    json.dumps(schema_data)  # Validate JSON serialization
-                except Exception as e:
-                    validation_results['is_valid'] = False
-                    validation_results['errors'].append(f"Invalid JSON structure: {str(e)}")
-                    return validation_results
-            
-            # Basic structure validation
+            # Type validation
             if not isinstance(schema_data, dict):
                 validation_results['is_valid'] = False
-                validation_results['errors'].append("Schema must be a JSON object")
+                validation_results['errors'].append(
+                    f"Invalid schema data type: expected dict, got {type(schema_data)}"
+                )
                 return validation_results
-                
-            # Check for required basic properties
+            
+            # Validate JSON serialization
+            try:
+                json.dumps(schema_data)
+            except Exception as e:
+                validation_results['is_valid'] = False
+                validation_results['errors'].append(f"Invalid JSON structure: {str(e)}")
+                return validation_results
+            
+            # Check required properties
             required_props = ['@context', '@type']
             for prop in required_props:
                 if prop not in schema_data:
@@ -148,47 +179,72 @@ class GPTSchemaAnalyzer:
                     
             # Validate @context
             if '@context' in schema_data:
-                if schema_data['@context'] != 'https://schema.org' and schema_data['@context'] != 'http://schema.org':
-                    validation_results['warnings'].append("@context should be 'https://schema.org'")
+                context = schema_data['@context']
+                if context not in ['https://schema.org', 'http://schema.org']:
+                    validation_results['warnings'].append(
+                        f"Non-standard @context value: {context}. Recommended: 'https://schema.org'"
+                    )
+                elif context == 'http://schema.org':
+                    validation_results['warnings'].append(
+                        "Using 'http://schema.org'. Recommended: 'https://schema.org'"
+                    )
                     
             return validation_results
             
         except Exception as e:
-            logger.error(f"Error in JSON-LD validation: {str(e)}")
+            logger.error(f"JSON-LD validation error: {type(e).__name__} - {str(e)}")
             return {
                 'is_valid': False,
-                'errors': [f"Validation error: {str(e)}"],
+                'errors': [f"Validation error: {type(e).__name__} - {str(e)}"],
                 'warnings': []
             }
             
     def generate_property_recommendations(self, schema_type: str) -> Dict[str, Any]:
-        """Generate property recommendations for a given schema type"""
+        """Generate property recommendations with improved structure and error handling"""
         try:
             self._rate_limit_delay()
             
-            prompt = f"""For the Schema.org type '{schema_type}', provide:
-1. Required properties
-2. Recommended properties
-3. Properties that enable rich results
-4. Common implementation mistakes to avoid"""
+            prompt = f"""For the Schema.org type '{schema_type}', provide structured recommendations:
+
+1. Required Properties:
+   - List all mandatory properties
+   - Impact on validation
+
+2. Recommended Properties:
+   - Important optional properties
+   - Use cases and benefits
+
+3. Rich Results Properties:
+   - Properties needed for rich results
+   - Google Search features enabled
+
+4. Implementation Guidelines:
+   - Common mistakes to avoid
+   - Best practices
+   - Testing recommendations"""
 
             try:
                 result = self._make_gemini_request(prompt)
                 return {
                     'success': True,
-                    'recommendations': result
+                    'recommendations': result,
+                    'schema_type': schema_type
                 }
             
             except Exception as e:
-                logger.error(f"Error in Gemini API call: {str(e)}")
+                error_msg = f"Failed to generate recommendations: {type(e).__name__} - {str(e)}"
+                logger.error(error_msg)
                 return {
                     'success': False,
-                    'error': f"Failed to generate recommendations: {str(e)}"
+                    'error': error_msg,
+                    'schema_type': schema_type
                 }
                 
         except Exception as e:
-            logger.error(f"Error generating property recommendations: {str(e)}")
+            error_msg = f"Error in recommendation generation: {type(e).__name__} - {str(e)}"
+            logger.error(error_msg)
             return {
                 'success': False,
-                'error': f"Failed to generate recommendations: {str(e)}"
+                'error': error_msg,
+                'schema_type': schema_type
             }

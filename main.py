@@ -20,101 +20,169 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def display_schema_data(schema_data):
-    """Display extracted schema data in a collapsible section"""
-    if not schema_data:
-        st.warning("No schema data was extracted")
+def display_documentation_references(schema_types_df, schema_type):
+    """Display enhanced documentation references with tooltips"""
+    row = schema_types_df[schema_types_df['Name'] == schema_type]
+    if not row.empty:
+        st.markdown("### 📚 Documentation References")
+        
+        # Schema.org Reference
+        schema_url = row['Schema URL'].iloc[0]
+        if schema_url:
+            st.markdown(f"""
+            **Schema.org Reference**
+            <div title="Official Schema.org specification">
+                🔗 <a href="{schema_url}" target="_blank">{schema_type} Schema Definition</a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # Google Documentation
+        google_doc = row['Google Doc URL'].iloc[0]
+        if pd.notna(google_doc):
+            st.markdown(f"""
+            **Google Search Documentation**
+            <div title="Google's implementation guidelines and rich result information">
+                📱 <a href="{google_doc}" target="_blank">Rich Results Guide</a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # Description
+        description = row['Description'].iloc[0]
+        if description:
+            st.info(f"ℹ️ {description}")
+
+def display_recommendations_with_tooltips(recommendations):
+    """Display schema recommendations with informative tooltips"""
+    if not recommendations:
+        st.warning("No recommendations available")
         return
         
-    with st.expander("📊 Extracted Schema Data", expanded=True):
-        for schema_type, data in schema_data.items():
-            st.subheader(f"Type: {schema_type}")
-            st.json(data)
-
-def display_validation_results(validation_results):
-    """Display validation results with color coding"""
-    if not validation_results:
-        st.warning("No validation results available")
-        return
+    st.markdown("### 💡 Implementation Recommendations")
+    
+    # Required Properties
+    with st.expander("Required Properties", expanded=True):
+        st.markdown("""
+        <div title="These properties are mandatory for valid implementation">
+            Properties that must be included for valid schema markup
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(recommendations.get('required_properties', 'No required properties specified'))
         
-    with st.expander("✅ Validation Results", expanded=True):
-        # Valid Types
-        if validation_results['valid_types']:
-            st.success("Valid Schema Types Found:")
-            for type_name in validation_results['valid_types']:
-                st.write(f"- {type_name}")
-
-        # Invalid Types
-        if validation_results['invalid_types']:
-            st.error("Invalid Schema Types Found:")
-            for type_name in validation_results['invalid_types']:
-                st.write(f"- {type_name}")
-
-        # Warnings
-        if validation_results['warnings']:
-            st.warning("Warnings:")
-            for warning in validation_results['warnings']:
-                st.write(f"- {warning}")
-
-        # Errors
-        if validation_results['errors']:
-            st.error("Errors:")
-            for error in validation_results['errors']:
-                st.write(f"- {error}")
-
-def display_competitor_insights(competitor_data):
-    """Display competitor insights using charts"""
-    if not competitor_data:
-        st.warning("No competitor data available")
-        return
+    # Recommended Properties
+    with st.expander("Recommended Properties", expanded=True):
+        st.markdown("""
+        <div title="These properties enhance the schema implementation">
+            Optional but valuable properties for better schema coverage
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(recommendations.get('recommended_properties', 'No recommended properties specified'))
         
-    with st.expander("🔍 Competitor Insights", expanded=True):
-        # Create usage statistics visualization
-        schema_types = []
-        usage_counts = []
-        for url, schemas in competitor_data.items():
-            for schema_type in schemas.keys():
-                schema_types.append(schema_type)
-                usage_counts.append(1)
+    # Rich Results Properties
+    with st.expander("Rich Results Properties", expanded=True):
+        st.markdown("""
+        <div title="Properties needed for Google rich results">
+            Properties required for enhanced search results display
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(recommendations.get('rich_results_properties', 'No rich results properties specified'))
 
-        if schema_types:
-            df = pd.DataFrame({
-                'Schema Type': schema_types,
-                'Count': usage_counts
-            }).groupby('Schema Type').sum().reset_index()
-
-            fig = px.bar(
-                df,
-                x='Schema Type',
-                y='Count',
-                title='Schema Usage Across Competitors'
-            )
-            st.plotly_chart(fig, use_container_width=True)
+def display_schema_analysis_results(schema_data, validation_results, competitor_data, schema_types_df):
+    """Display comprehensive schema analysis results with enhanced error handling"""
+    try:
+        st.markdown("## Analysis Results")
+        
+        # Schema Data Display
+        if schema_data:
+            with st.expander("📊 Extracted Schema Data", expanded=True):
+                for schema_type, data in schema_data.items():
+                    st.subheader(f"Type: {schema_type}")
+                    
+                    # Display documentation references
+                    display_documentation_references(schema_types_df, schema_type)
+                    
+                    # Display schema data
+                    st.json(data)
+                    
+                    # Display recommendations if available
+                    if validation_results and 'property_recommendations' in validation_results:
+                        recommendations = validation_results['property_recommendations'].get(schema_type, {})
+                        if recommendations:
+                            display_recommendations_with_tooltips(recommendations)
         else:
-            st.info("No schema usage data available from competitors")
+            st.warning("No schema data was extracted")
+            
+        # Validation Results
+        if validation_results:
+            with st.expander("✅ Validation Results", expanded=True):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    if validation_results['valid_types']:
+                        st.success("Valid Schema Types:")
+                        for type_name in validation_results['valid_types']:
+                            st.markdown(f"✓ {type_name}")
+                            
+                with col2:
+                    if validation_results['invalid_types']:
+                        st.error("Invalid Schema Types:")
+                        for type_name in validation_results['invalid_types']:
+                            st.markdown(f"⚠️ {type_name}")
+                
+                # Display warnings and errors
+                if validation_results['warnings']:
+                    st.warning("Warnings:")
+                    for warning in validation_results['warnings']:
+                        st.markdown(f"⚠️ {warning}")
+                        
+                if validation_results['errors']:
+                    st.error("Errors:")
+                    for error in validation_results['errors']:
+                        st.markdown(f"❌ {error}")
+                        
+        # Competitor Insights
+        if competitor_data:
+            with st.expander("🔍 Competitor Insights", expanded=True):
+                try:
+                    schema_types = []
+                    usage_counts = []
+                    for url, schemas in competitor_data.items():
+                        for schema_type in schemas.keys():
+                            schema_types.append(schema_type)
+                            usage_counts.append(1)
 
-def display_gpt_recommendations(validation_results):
-    """Display GPT-powered recommendations"""
-    if not validation_results or 'gpt_analysis' not in validation_results:
-        st.warning("No GPT recommendations available")
-        return
-        
-    with st.expander("💡 GPT Recommendations", expanded=True):
-        for schema_type, analysis in validation_results['gpt_analysis'].items():
-            st.subheader(f"Analysis for {schema_type}")
-            
-            # Documentation Analysis
-            st.markdown("**Documentation Analysis:**")
-            st.write(analysis.get('documentation_analysis', 'No analysis available'))
-            
-            # Competitor Insights
-            st.markdown("**Competitor Insights:**")
-            st.write(analysis.get('competitor_insights', 'No insights available'))
-            
-            # Recommendations
-            st.markdown("**Recommendations:**")
-            st.write(analysis.get('recommendations', 'No recommendations available'))
+                    if schema_types:
+                        df = pd.DataFrame({
+                            'Schema Type': schema_types,
+                            'Count': usage_counts
+                        }).groupby('Schema Type').sum().reset_index()
 
+                        fig = px.bar(
+                            df,
+                            x='Schema Type',
+                            y='Count',
+                            title='Schema Usage Across Competitors',
+                            labels={'Count': 'Number of Implementations'},
+                            color='Count',
+                            color_continuous_scale='Viridis'
+                        )
+                        fig.update_layout(
+                            showlegend=False,
+                            hovermode='x',
+                            hoverlabel=dict(bgcolor="white"),
+                            margin=dict(t=50, l=0, r=0, b=0)
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        st.info("No schema usage data available from competitors")
+                except Exception as e:
+                    logger.error(f"Error displaying competitor insights: {str(e)}")
+                    st.error("Error displaying competitor insights")
+                    
+    except Exception as e:
+        logger.error(f"Error displaying analysis results: {str(e)}")
+        st.error(f"An error occurred while displaying analysis results: {str(e)}")
+
+# Update the main() function to use the new display functions
 def main():
     try:
         # Page config
@@ -252,24 +320,13 @@ def main():
                     time.sleep(1)  # Give user time to see completion
                     status_text.empty()
 
-                    # Display results
-                    st.markdown("## Analysis Results")
-
-                    # Display extracted schema
-                    if schema_data is not None:
-                        display_schema_data(schema_data)
-                    
-                    # Display validation results
-                    if validation_results is not None:
-                        display_validation_results(validation_results)
-                    
-                    # Display competitor insights
-                    if competitor_data is not None:
-                        display_competitor_insights(competitor_data)
-                    
-                    # Display GPT recommendations
-                    if validation_results is not None:
-                        display_gpt_recommendations(validation_results)
+                    # Display results using new functions
+                    display_schema_analysis_results(
+                        schema_data,
+                        validation_results,
+                        competitor_data,
+                        schema_types_df
+                    )
 
                 except Exception as e:
                     logger.error(f"Error during analysis: {str(e)}")
