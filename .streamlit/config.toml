@@ -1,13 +1,8 @@
 [server]
 headless = true
-port = 5000
 address = "0.0.0.0"
-runOnSave = true
+port = 5000
 enableCORS = false
-
-[browser]
-gatherUsageStats = false
-serverAddress = "0.0.0.0"
 
 [theme]
 primaryColor = "#FF4B4B"
