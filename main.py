@@ -253,20 +253,26 @@ def main():
                                 for suggestion in validation_results['suggested_additions']:
                                     schema_type = suggestion.get('type', 'Unknown')
                                     with st.expander(f"Add {schema_type} Schema"):
-                                        # Add documentation links
+                                        # Add source information
+                                        st.markdown("**Source**: " + suggestion.get('reason', 'Schema.org specification'))
+                                        
+                                        # Add documentation links with source
                                         schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
                                         if not schema_row.empty:
                                             col1, col2 = st.columns(2)
                                             with col1:
                                                 if not pd.isna(schema_row['Google Doc URL'].iloc[0]):
+                                                    st.markdown("**Source**: Google Developer Documentation")
                                                     st.markdown(f"[📚 Google Developers Guide]({schema_row['Google Doc URL'].iloc[0]})")
                                             with col2:
                                                 if not pd.isna(schema_row['Schema URL'].iloc[0]):
+                                                    st.markdown("**Source**: Schema.org")
                                                     st.markdown(f"[🔗 Schema.org Reference]({schema_row['Schema URL'].iloc[0]})")
                                         
-                                        # Display recommendations
+                                        # Display recommendations with source
                                         rec_data = suggestion.get('recommendations', {}).get('recommendations', '')
                                         if isinstance(rec_data, str):
+                                            st.markdown("### Implementation Details")
                                             st.markdown(rec_data)
                                         elif isinstance(rec_data, list):
                                             for rec_item in rec_data:

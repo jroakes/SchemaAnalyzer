@@ -235,7 +235,29 @@ class SchemaValidator:
                 if comp_type not in current_types:
                     validation_results['suggested_additions'].append({
                         'type': comp_type,
-                        'reason': "Used by competitors",
+                        'reason': "Competitor Implementation",  # Changed from "Used by competitors"
+                        'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
+                    })
+
+            # Generate suggestions for missing schemas
+            competitor_types = self._get_competitor_schema_types()
+            current_types = set(validation_results['all_types'])
+            for comp_type in competitor_types:
+                if comp_type not in current_types:
+                    validation_results['suggested_additions'].append({
+                        'type': comp_type,
+                        'reason': "Competitor Implementation",  # Changed from "Used by competitors"
+                        'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
+                    })
+
+            # Generate suggestions for missing schemas
+            competitor_types = self._get_competitor_schema_types()
+            current_types = set(validation_results['all_types'])
+            for comp_type in competitor_types:
+                if comp_type not in current_types:
+                    validation_results['suggested_additions'].append({
+                        'type': comp_type,
+                        'reason': "Competitor Implementation",  # Changed from "Used by competitors"
                         'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
                     })
 
