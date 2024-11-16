@@ -231,35 +231,16 @@ class SchemaValidator:
             # Generate suggestions for missing schemas
             competitor_types = self._get_competitor_schema_types()
             current_types = set(validation_results['all_types'])
+            added_types = set()  # Track added types to avoid duplicates
+            
             for comp_type in competitor_types:
-                if comp_type not in current_types:
+                if comp_type not in current_types and comp_type not in added_types:
                     validation_results['suggested_additions'].append({
                         'type': comp_type,
-                        'reason': "Competitor Implementation",  # Changed from "Used by competitors"
+                        'reason': "Competitor Implementation",
                         'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
                     })
-
-            # Generate suggestions for missing schemas
-            competitor_types = self._get_competitor_schema_types()
-            current_types = set(validation_results['all_types'])
-            for comp_type in competitor_types:
-                if comp_type not in current_types:
-                    validation_results['suggested_additions'].append({
-                        'type': comp_type,
-                        'reason': "Competitor Implementation",  # Changed from "Used by competitors"
-                        'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
-                    })
-
-            # Generate suggestions for missing schemas
-            competitor_types = self._get_competitor_schema_types()
-            current_types = set(validation_results['all_types'])
-            for comp_type in competitor_types:
-                if comp_type not in current_types:
-                    validation_results['suggested_additions'].append({
-                        'type': comp_type,
-                        'reason': "Competitor Implementation",  # Changed from "Used by competitors"
-                        'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
-                    })
+                    added_types.add(comp_type)
 
         except Exception as e:
             logger.error(f"Error in schema validation: {str(e)}")

@@ -157,3 +157,58 @@
     background-color: #2979ff;
     color: white;
 }
+
+/* Badge styling */
+.source-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #f0f2f6;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    margin: 0.5rem 0;
+}
+
+.source-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+.source-text {
+    font-weight: 500;
+    color: #262730;
+}
+
+/* Documentation Links */
+.documentation-links {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.doc-link {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.doc-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.doc-icon {
+    font-size: 1.2rem;
+    margin-right: 0.5rem;
+}
+
+.doc-link.google {
+    border-left: 4px solid #4285f4;
+}
+
+.doc-link.schema {
+    border-left: 4px solid #34a853;
+}

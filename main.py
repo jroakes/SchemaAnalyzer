@@ -253,23 +253,36 @@ def main():
                                 for suggestion in validation_results['suggested_additions']:
                                     schema_type = suggestion.get('type', 'Unknown')
                                     with st.expander(f"Add {schema_type} Schema"):
-                                        # Add source information
-                                        st.markdown("**Source**: " + suggestion.get('reason', 'Schema.org specification'))
+                                        # Add source information with icon
+                                        source_icon = "🔄" if suggestion.get('reason') == "Competitor Implementation" else "📋"
+                                        st.markdown(
+                                            f'''<div class="source-badge">
+                                                <span class="source-icon">{source_icon}</span>
+                                                <span class="source-text">{suggestion.get('reason', 'Schema.org specification')}</span>
+                                            </div>''',
+                                            unsafe_allow_html=True
+                                        )
                                         
                                         # Add documentation links with source
                                         schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
                                         if not schema_row.empty:
-                                            col1, col2 = st.columns(2)
-                                            with col1:
-                                                if not pd.isna(schema_row['Google Doc URL'].iloc[0]):
-                                                    st.markdown("**Source**: Google Developer Documentation")
-                                                    st.markdown(f"[📚 Google Developers Guide]({schema_row['Google Doc URL'].iloc[0]})")
-                                            with col2:
-                                                if not pd.isna(schema_row['Schema URL'].iloc[0]):
-                                                    st.markdown("**Source**: Schema.org")
-                                                    st.markdown(f"[🔗 Schema.org Reference]({schema_row['Schema URL'].iloc[0]})")
+                                            st.markdown('''
+                                                <div class="documentation-links">
+                                                    <div class="doc-link google">
+                                                        <span class="doc-icon">📚</span>
+                                                        <a href="{google_url}">Google Developers Guide</a>
+                                                    </div>
+                                                    <div class="doc-link schema">
+                                                        <span class="doc-icon">🔗</span>
+                                                        <a href="{schema_url}">Schema.org Reference</a>
+                                                    </div>
+                                                </div>
+                                            '''.format(
+                                                google_url=schema_row['Google Doc URL'].iloc[0] if not pd.isna(schema_row['Google Doc URL'].iloc[0]) else "#",
+                                                schema_url=schema_row['Schema URL'].iloc[0] if not pd.isna(schema_row['Schema URL'].iloc[0]) else "#"
+                                            ), unsafe_allow_html=True)
                                         
-                                        # Display recommendations with source
+                                        # Display recommendations
                                         rec_data = suggestion.get('recommendations', {}).get('recommendations', '')
                                         if isinstance(rec_data, str):
                                             st.markdown("### Implementation Details")
