@@ -220,7 +220,14 @@ def main():
                             if validation_results.get('suggested_additions'):
                                 for suggestion in validation_results['suggested_additions']:
                                     with st.expander(f"Add {suggestion.get('type', 'Unknown')} Schema"):
-                                        st.markdown(suggestion.get('recommendations', ''))
+                                        rec_data = suggestion.get('recommendations', {}).get('recommendations', '')
+                                        if isinstance(rec_data, str):
+                                            st.markdown(rec_data)
+                                        elif isinstance(rec_data, list):
+                                            for rec_item in rec_data:
+                                                st.markdown(rec_item)
+                                        else:
+                                            st.markdown("No recommendations available")
 
                 except Exception as e:
                     logger.error(f"Error in analysis process: {str(e)}")
