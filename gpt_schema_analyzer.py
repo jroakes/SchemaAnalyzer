@@ -1,11 +1,12 @@
 import os
-import openai
+import google.generativeai as genai
 from typing import Dict, List, Any, Optional
 import json
 import time
 from functools import lru_cache
 import logging
 import backoff
+from google.api_core import retry
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,10 +14,11 @@ logger = logging.getLogger(__name__)
 
 class GPTSchemaAnalyzer:
     def __init__(self):
-        self.api_key = os.environ.get('OPENAI_API_KEY')
+        self.api_key = os.environ.get('GOOGLE_API_KEY')
         if not self.api_key:
-            raise ValueError("OpenAI API key not found in environment variables")
-        openai.api_key = self.api_key
+            raise ValueError("Google API key not found in environment variables")
+        genai.configure(api_key=self.api_key)
+        self.model = genai.GenerativeModel('gemini-pro')
         self.max_retries = 3
         self.base_delay = 1
         
@@ -54,28 +56,25 @@ class GPTSchemaAnalyzer:
         
         return prompts.get(analysis_type, base_prompt)
 
-    @backoff.on_exception(backoff.expo, 
-                         (openai.error.RateLimitError, 
-                          openai.error.APIError,
-                          openai.error.ServiceUnavailableError),
-                         max_tries=3)
-    def _make_openai_request(self, messages: List[Dict[str, str]], max_tokens: int = 1000) -> str:
-        """Make OpenAI API request with retry logic"""
+    @backoff.on_exception(
+        backoff.expo,
+        (Exception,),  # Handle all exceptions for now, can be refined later
+        max_tries=3
+    )
+    def _make_gemini_request(self, prompt: str) -> str:
+        """Make Gemini API request with retry logic"""
         try:
-            response = openai.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=max_tokens
-            )
-            return response.choices[0].message.content
+            response = self.model.generate_content(prompt)
+            if response.text:
+                return response.text
+            return "No response generated"
         except Exception as e:
-            logger.error(f"OpenAI API request failed: {str(e)}")
+            logger.error(f"Gemini API request failed: {str(e)}")
             raise
         
     @lru_cache(maxsize=100)
     def analyze_schema_implementation(self, schema_data: Any) -> Dict[str, Any]:
-        """Analyze schema implementation using GPT with improved error handling"""
+        """Analyze schema implementation using Gemini with improved error handling"""
         try:
             # Convert input to JSON string
             schema_str = self._convert_to_json_string(schema_data)
@@ -94,16 +93,11 @@ class GPTSchemaAnalyzer:
                 self._rate_limit_delay()
                 
                 try:
-                    messages = [
-                        {"role": "system", "content": "You are a Schema.org and SEO expert. Analyze the given schema markup and provide detailed insights."},
-                        {"role": "user", "content": prompt}
-                    ]
-                    
-                    result = self._make_openai_request(messages)
+                    result = self._make_gemini_request(prompt)
                     analysis_results[analysis_type] = result
                     
                 except Exception as e:
-                    logger.error(f"Error in GPT API call for {analysis_type}: {str(e)}")
+                    logger.error(f"Error in Gemini API call for {analysis_type}: {str(e)}")
                     analysis_results[analysis_type] = f"Analysis failed: {str(e)}"
             
             return {
@@ -113,7 +107,7 @@ class GPTSchemaAnalyzer:
             }
             
         except Exception as e:
-            logger.error(f"Error in GPT analysis: {str(e)}")
+            logger.error(f"Error in Gemini analysis: {str(e)}")
             return {
                 'error': f"Failed to analyze schema: {str(e)}",
                 'documentation_analysis': "Analysis unavailable",
@@ -179,19 +173,14 @@ class GPTSchemaAnalyzer:
 4. Common implementation mistakes to avoid"""
 
             try:
-                messages = [
-                    {"role": "system", "content": "You are a Schema.org expert. Provide detailed property recommendations."},
-                    {"role": "user", "content": prompt}
-                ]
-                
-                result = self._make_openai_request(messages)
+                result = self._make_gemini_request(prompt)
                 return {
                     'success': True,
                     'recommendations': result
                 }
             
             except Exception as e:
-                logger.error(f"Error in GPT API call: {str(e)}")
+                logger.error(f"Error in Gemini API call: {str(e)}")
                 return {
                     'success': False,
                     'error': f"Failed to generate recommendations: {str(e)}"
