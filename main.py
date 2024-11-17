@@ -230,7 +230,33 @@ def main():
                                         # Display formatted implementation details
                                         st.markdown("### Implementation Details")
                                         if isinstance(schema.get('recommendations'), str):
-                                            st.markdown(schema['recommendations'])
+                                            # Check if content contains markdown table
+                                            content = schema['recommendations']
+                                            if '|' in content and '---' in content:
+                                                # Convert markdown table to HTML
+                                                rows = [row.strip() for row in content.split('\n') if row.strip()]
+                                                table_html = '<table class="styled-table">'
+                                                
+                                                # Add header
+                                                header = rows[0].split('|')[1:-1]  # Remove first and last empty cells
+                                                table_html += '<thead><tr>'
+                                                for cell in header:
+                                                    table_html += f'<th>{cell.strip()}</th>'
+                                                table_html += '</tr></thead>'
+                                                
+                                                # Skip separator row and add data rows
+                                                table_html += '<tbody>'
+                                                for row in rows[2:]:  # Skip header and separator
+                                                    cells = row.split('|')[1:-1]  # Remove first and last empty cells
+                                                    table_html += '<tr>'
+                                                    for cell in cells:
+                                                        table_html += f'<td>{cell.strip()}</td>'
+                                                    table_html += '</tr>'
+                                                table_html += '</tbody></table>'
+                                                
+                                                st.markdown(table_html, unsafe_allow_html=True)
+                                            else:
+                                                st.markdown(content)
                                         else:
                                             st.write("Schema Properties:")
                                             for key, value in schema.items():
