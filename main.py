@@ -21,6 +21,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def format_json_schema(schema_data: Dict) -> str:
+    """Format schema data as JSON string with proper indentation"""
+    try:
+        return json.dumps(schema_data, indent=2)
+    except:
+        return str(schema_data)
+
 def get_doc_url(schema_row: pd.DataFrame, url_type: str) -> Optional[str]:
     """Safely get documentation URL from schema row"""
     try:
@@ -288,11 +295,33 @@ def main():
                             for schema in validation_results['needs_improvement']:
                                 schema_type = schema.get('type', 'Unknown')
                                 with st.expander(f"Schema: {schema_type}"):
+                                    # Add source badge
+                                    source = schema.get('reason', 'Schema.org')
+                                    st.markdown(
+                                        f'''<div class="source-badge">
+                                            <span class="source-icon">🔍</span>
+                                            <span class="source-text">Source: {source}</span>
+                                        </div>''',
+                                        unsafe_allow_html=True
+                                    )
+                                    
+                                    # Display documentation links
                                     display_schema_documentation_links(schema_type, schema_types_df)
                                     
+                                    # Display formatted JSON schema
+                                    if schema.get('key'):
+                                        st.markdown("### Current Implementation")
+                                        try:
+                                            schema_json = json.loads(schema['key'])
+                                            st.json(schema_json)
+                                        except:
+                                            st.code(schema['key'], language='json')
+                                    
+                                    # Display issues with icons
                                     if schema.get('issues'):
                                         display_schema_issues(schema['issues'])
-
+                                    
+                                    # Display recommendations
                                     if schema.get('recommendations'):
                                         display_schema_recommendations(schema['recommendations'])
 
