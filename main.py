@@ -21,6 +21,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def get_doc_url(schema_row: pd.DataFrame, url_type: str) -> Optional[str]:
+    """Safely get documentation URL from schema row"""
+    try:
+        if not schema_row.empty and url_type in schema_row.columns:
+            url = schema_row[url_type].values[0]
+            return None if pd.isna(url) else str(url)
+        return None
+    except Exception as e:
+        logger.error(f"Error getting {url_type}: {str(e)}")
+        return None
+
 def check_environment():
     """Check if all required environment variables are set"""
     required_vars = ['VALUESERP_API_KEY', 'GOOGLE_API_KEY']
@@ -55,6 +66,68 @@ def initialize_app():
         logger.error(f"Failed to initialize application: {str(e)}")
         st.error(f"Application initialization failed: {str(e)}")
         return False
+
+def display_schema_documentation_links(schema_type: str, schema_types_df: pd.DataFrame):
+    """Display documentation links for a schema type"""
+    try:
+        schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
+        if not schema_row.empty:
+            col1, col2 = st.columns(2)
+            with col1:
+                google_url = get_doc_url(schema_row, 'Google Doc URL')
+                if google_url:
+                    st.markdown(f"[📚 Google Developers Guide]({google_url})")
+            with col2:
+                schema_url = get_doc_url(schema_row, 'Schema URL')
+                if schema_url:
+                    st.markdown(f"[🔗 Schema.org Reference]({schema_url})")
+    except Exception as e:
+        logger.error(f"Error displaying documentation links: {str(e)}")
+
+def display_schema_issues(issues: List[Dict[str, Any]]):
+    """Display schema validation issues with proper formatting"""
+    st.markdown("### Issues Found")
+    for issue in issues:
+        severity = issue.get('severity', 'info')
+        icon = "🚫" if severity == "error" else "⚠️" if severity == "warning" else "ℹ️"
+        message = issue.get('message', '')
+        st.markdown(
+            f"""<div class="issue-{severity}">
+                {icon} <strong>{severity.title()}</strong>: {message}
+            </div>""",
+            unsafe_allow_html=True
+        )
+        if suggestion := issue.get('suggestion'):
+            st.markdown(
+                f"""<div class="suggestion">
+                    💡 <em>Suggestion</em>: {suggestion}
+                </div>""",
+                unsafe_allow_html=True
+            )
+
+def display_schema_recommendations(recommendations: str):
+    """Display schema recommendations with proper formatting"""
+    st.markdown("### Recommendations")
+    if '|' in recommendations and '---' in recommendations:
+        # Convert markdown table to HTML
+        rows = [row.strip() for row in recommendations.split('\n') if row.strip()]
+        if len(rows) >= 3:  # Ensure we have header, separator, and data
+            table_html = '<table class="styled-table">'
+            
+            # Add header
+            header = [cell.strip() for cell in rows[0].split('|')[1:-1]]
+            table_html += '<thead><tr>' + ''.join(f'<th>{cell}</th>' for cell in header) + '</tr></thead>'
+            
+            # Add data rows
+            table_html += '<tbody>'
+            for row in rows[2:]:
+                cells = [cell.strip() for cell in row.split('|')[1:-1]]
+                table_html += '<tr>' + ''.join(f'<td>{cell}</td>' for cell in cells) + '</tr>'
+            table_html += '</tbody></table>'
+            
+            st.markdown(table_html, unsafe_allow_html=True)
+    else:
+        st.markdown(recommendations)
 
 def main():
     """Main application function with enhanced error handling"""
@@ -106,10 +179,6 @@ def main():
             error_container = st.empty()
 
             try:
-                # Initialize analyzers
-                schema_analyzer = SchemaAnalyzer(url)
-                competitor_analyzer = CompetitorAnalyzer(keyword)
-                
                 # Load schema types
                 try:
                     schema_types_df = pd.read_csv('supported_schema.csv')
@@ -117,179 +186,134 @@ def main():
                     logger.error(f"Failed to load schema types: {str(e)}")
                     st.error("Failed to load schema types data. Please try again.")
                     return
-                    
+
+                # Initialize analyzers
+                schema_analyzer = SchemaAnalyzer(url)
+                competitor_analyzer = CompetitorAnalyzer(keyword)
                 schema_validator = SchemaValidator(schema_types_df)
 
-                schema_data = None
-                competitor_data = None
-                validation_results = None
+                # Extract schema data
+                status_text.text("🔍 Analyzing schema markup...")
+                schema_data = schema_analyzer.extract_schema()
+                progress_bar.progress(0.25)
 
+                # Analyze competitors
+                status_text.text("🔄 Analyzing competitors...")
+                competitor_data = {}
                 try:
-                    # Extract schema data
-                    status_text.text("🔍 Analyzing schema markup...")
-                    schema_data = schema_analyzer.extract_schema()
-                    progress_bar.progress(0.25)
-                    
-                    # Analyze competitors
-                    status_text.text("🔄 Analyzing competitors...")
-                    try:
-                        competitor_data = competitor_analyzer.analyze_competitors(
-                            progress_callback=lambda p: progress_bar.progress(0.25 + p * 0.25)
-                        )
-                    except Exception as e:
-                        logger.error(f"Error analyzing competitors: {str(e)}")
-                        error_container.error(f"Error analyzing competitors: {str(e)}")
-                        competitor_data = {}
+                    competitor_data = competitor_analyzer.analyze_competitors(
+                        progress_callback=lambda p: progress_bar.progress(0.25 + p * 0.25)
+                    )
+                except Exception as e:
+                    logger.error(f"Error analyzing competitors: {str(e)}")
+                    error_container.error(f"Error analyzing competitors: {str(e)}")
 
-                    # Validate schema
-                    status_text.text("✅ Validating schema...")
-                    try:
-                        if schema_data:
-                            validation_results = schema_validator.validate_schema(schema_data)
-                            
-                            # Show validation errors if any
-                            if validation_results.get('errors'):
-                                error_details = []
-                                for error in validation_results['errors']:
-                                    if isinstance(error, dict):
-                                        error_details.append(f"{error.get('type', 'Unknown')}: {error.get('message', 'Unknown error')}")
-                                    else:
-                                        error_details.append(str(error))
-                                error_container.error("Validation Errors:\n" + "\n".join(error_details))
-                            
-                            progress_bar.progress(0.75)
-                        else:
-                            validation_results = {
-                                'good_schemas': [],
-                                'needs_improvement': [],
-                                'suggested_additions': [],
-                                'warnings': ['No schema data found on the page'],
-                                'errors': []
-                            }
-                            st.warning("No schema markup found on the page")
+                # Validate schema
+                status_text.text("✅ Validating schema...")
+                validation_results = None
+                try:
+                    if schema_data:
+                        validation_results = schema_validator.validate_schema(schema_data)
                         progress_bar.progress(0.75)
-                    except Exception as e:
-                        logger.error(f"Error validating schema: {str(e)}")
-                        error_container.error(f"Error validating schema: {str(e)}")
-                        validation_results = None
+                    else:
+                        validation_results = {
+                            'good_schemas': [],
+                            'needs_improvement': [],
+                            'suggested_additions': [],
+                            'warnings': ['No schema data found on the page'],
+                            'errors': []
+                        }
+                        st.warning("No schema markup found on the page")
+                except Exception as e:
+                    logger.error(f"Error validating schema: {str(e)}")
+                    error_container.error(f"Error validating schema: {str(e)}")
+                    return
 
-                    # Display results
+                # Display results
+                if validation_results:
                     progress_bar.progress(1.0)
                     status_text.text("✨ Analysis complete!")
                     time.sleep(1)
                     progress_bar.empty()
                     status_text.empty()
 
-                    if validation_results:
-                        # Display results in tabs
-                        analysis_tab, competitor_tab, recommendations_tab = st.tabs([
-                            "🔍 Schema Analysis",
-                            "📊 Competitor Insights",
-                            "💡 Recommendations"
-                        ])
+                    # Display results in tabs
+                    analysis_tab, competitor_tab, recommendations_tab = st.tabs([
+                        "🔍 Schema Analysis",
+                        "📊 Competitor Insights",
+                        "💡 Recommendations"
+                    ])
 
-                        with analysis_tab:
-                            # Summary metrics
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.metric(
-                                    "Good Implementations",
-                                    len(validation_results.get('good_schemas', [])),
-                                    help="Number of well-implemented schemas"
-                                )
-                            with col2:
-                                st.metric(
-                                    "Needs Improvement",
-                                    len(validation_results.get('needs_improvement', [])),
-                                    help="Number of schemas requiring updates"
-                                )
-                            with col3:
-                                st.metric(
-                                    "Suggested Additions",
-                                    len(validation_results.get('suggested_additions', [])),
-                                    help="Number of recommended new schemas"
-                                )
+                    with analysis_tab:
+                        # Summary metrics
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric(
+                                "Good Implementations",
+                                len(validation_results.get('good_schemas', [])),
+                                help="Number of well-implemented schemas"
+                            )
+                        with col2:
+                            st.metric(
+                                "Needs Improvement",
+                                len(validation_results.get('needs_improvement', [])),
+                                help="Number of schemas requiring updates"
+                            )
+                        with col3:
+                            st.metric(
+                                "Suggested Additions",
+                                len(validation_results.get('suggested_additions', [])),
+                                help="Number of recommended new schemas"
+                            )
 
-                            # Display schema details
-                            if validation_results.get('good_schemas'):
-                                st.subheader("✅ Good Implementations")
-                                for schema in validation_results['good_schemas']:
-                                    schema_type = schema.get('type', 'Unknown')
-                                    with st.expander(f"Schema: {schema_type}"):
-                                        # Add documentation links
-                                        schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
-                                        if not schema_row.empty:
-                                            col1, col2 = st.columns(2)
-                                            with col1:
-                                                if not pd.isna(schema_row['Google Doc URL'].iloc[0]):
-                                                    st.markdown(f"[📚 Google Developers Guide]({schema_row['Google Doc URL'].iloc[0]})")
-                                            with col2:
-                                                if not pd.isna(schema_row['Schema URL'].iloc[0]):
-                                                    st.markdown(f"[🔗 Schema.org Reference]({schema_row['Schema URL'].iloc[0]})")
-                                        
-                                        # Display formatted implementation details
-                                        st.markdown("### Implementation Details")
-                                        if isinstance(schema.get('recommendations'), str):
-                                            # Check if content contains markdown table
-                                            content = schema['recommendations']
-                                            if '|' in content and '---' in content:
-                                                # Convert markdown table to HTML
-                                                rows = [row.strip() for row in content.split('\n') if row.strip()]
-                                                table_html = '<table class="styled-table">'
-                                                
-                                                # Add header
-                                                header = rows[0].split('|')[1:-1]  # Remove first and last empty cells
-                                                table_html += '<thead><tr>'
-                                                for cell in header:
-                                                    table_html += f'<th>{cell.strip()}</th>'
-                                                table_html += '</tr></thead>'
-                                                
-                                                # Skip separator row and add data rows
-                                                table_html += '<tbody>'
-                                                for row in rows[2:]:  # Skip header and separator
-                                                    cells = row.split('|')[1:-1]  # Remove first and last empty cells
-                                                    table_html += '<tr>'
-                                                    for cell in cells:
-                                                        table_html += f'<td>{cell.strip()}</td>'
-                                                    table_html += '</tr>'
-                                                table_html += '</tbody></table>'
-                                                
-                                                st.markdown(table_html, unsafe_allow_html=True)
-                                            else:
-                                                st.markdown(content)
-                                        else:
-                                            st.write("Schema Properties:")
-                                            for key, value in schema.items():
-                                                if key not in ['type', 'recommendations', 'issues']:
-                                                    st.markdown(f"**{key}**: {value}")
+                        # Display schema details
+                        if validation_results.get('good_schemas'):
+                            st.subheader("✅ Good Implementations")
+                            for schema in validation_results['good_schemas']:
+                                schema_type = schema.get('type', 'Unknown')
+                                with st.expander(f"Schema: {schema_type}"):
+                                    display_schema_documentation_links(schema_type, schema_types_df)
+                                    
+                                    st.markdown("### Implementation Details")
+                                    if isinstance(schema.get('recommendations'), str):
+                                        display_schema_recommendations(schema['recommendations'])
+                                    else:
+                                        st.write("Schema Properties:")
+                                        for key, value in schema.items():
+                                            if key not in ['type', 'recommendations', 'issues']:
+                                                st.markdown(f"**{key}**: {value}")
 
-                            if validation_results.get('needs_improvement'):
-                                st.subheader("🔧 Needs Improvement")
-                                for schema in validation_results['needs_improvement']:
-                                    with st.expander(f"Schema: {schema.get('type', 'Unknown')}"):
-                                        st.json(schema)
+                        if validation_results.get('needs_improvement'):
+                            st.subheader("🔧 Needs Improvement")
+                            for schema in validation_results['needs_improvement']:
+                                schema_type = schema.get('type', 'Unknown')
+                                with st.expander(f"Schema: {schema_type}"):
+                                    display_schema_documentation_links(schema_type, schema_types_df)
+                                    
+                                    if schema.get('issues'):
+                                        display_schema_issues(schema['issues'])
+
+                                    if schema.get('recommendations'):
+                                        display_schema_recommendations(schema['recommendations'])
 
                         with competitor_tab:
                             if competitor_data:
-                                st.subheader("Competitor Schema Usage")
-                                # Create DataFrame for visualization
-                                schema_counts = {}
-                                for schemas in competitor_data.values():
-                                    for schema_type in schemas.keys():
-                                        schema_counts[schema_type] = schema_counts.get(schema_type, 0) + 1
-
-                                if schema_counts:
-                                    df = pd.DataFrame(
-                                        {'Schema Type': list(schema_counts.keys()),
-                                         'Count': list(schema_counts.values())}
-                                    )
+                                st.subheader("Competitor Schema Analysis")
+                                st.markdown("### Schema Usage Among Competitors")
+                                competitor_stats = competitor_analyzer.get_schema_usage_stats()
+                                
+                                if competitor_stats:
+                                    # Create DataFrame for visualization
+                                    stats_df = pd.DataFrame(competitor_stats)
                                     fig = px.bar(
-                                        df,
-                                        x='Schema Type',
-                                        y='Count',
-                                        title='Schema Types Used by Competitors'
+                                        stats_df,
+                                        x='schema_type',
+                                        y='percentage',
+                                        title='Schema Usage Distribution',
+                                        labels={'schema_type': 'Schema Type', 'percentage': 'Usage (%)'}
                                     )
-                                    st.plotly_chart(fig, use_container_width=True)
+                                    st.plotly_chart(fig)
+
                             else:
                                 st.info("No competitor data available")
 
@@ -297,59 +321,20 @@ def main():
                             st.subheader("💡 Recommendations")
                             if validation_results.get('suggested_additions'):
                                 for suggestion in validation_results['suggested_additions']:
-                                    schema_type = suggestion.get('type', 'Unknown')
-                                    with st.expander(f"Add {schema_type} Schema"):
-                                        # Add source information with icon
-                                        source_icon = "🔄" if suggestion.get('reason') == "Competitor Implementation" else "📋"
-                                        st.markdown(
-                                            f'''<div class="source-badge">
-                                                <span class="source-icon">{source_icon}</span>
-                                                <span class="source-text">{suggestion.get('reason', 'Schema.org specification')}</span>
-                                            </div>''',
-                                            unsafe_allow_html=True
-                                        )
-                                        
-                                        # Add documentation links with source
-                                        schema_row = schema_types_df[schema_types_df['Name'] == schema_type]
-                                        if not schema_row.empty:
-                                            st.markdown('''
-                                                <div class="documentation-links">
-                                                    <div class="doc-link google">
-                                                        <span class="doc-icon">📚</span>
-                                                        <a href="{google_url}">Google Developers Guide</a>
-                                                    </div>
-                                                    <div class="doc-link schema">
-                                                        <span class="doc-icon">🔗</span>
-                                                        <a href="{schema_url}">Schema.org Reference</a>
-                                                    </div>
-                                                </div>
-                                            '''.format(
-                                                google_url=schema_row['Google Doc URL'].iloc[0] if not pd.isna(schema_row['Google Doc URL'].iloc[0]) else "#",
-                                                schema_url=schema_row['Schema URL'].iloc[0] if not pd.isna(schema_row['Schema URL'].iloc[0]) else "#"
-                                            ), unsafe_allow_html=True)
-                                        
-                                        # Display recommendations
-                                        rec_data = suggestion.get('recommendations', {}).get('recommendations', '')
-                                        if isinstance(rec_data, str):
-                                            st.markdown("### Implementation Details")
-                                            st.markdown(rec_data)
-                                        elif isinstance(rec_data, list):
-                                            for rec_item in rec_data:
-                                                st.markdown(rec_item)
-                                        else:
-                                            st.markdown("No recommendations available")
-
-                except Exception as e:
-                    logger.error(f"Error in analysis process: {str(e)}")
-                    st.error(f"An error occurred during analysis: {str(e)}")
+                                    with st.expander(f"Add {suggestion['type']} Schema"):
+                                        st.markdown(f"**Why**: {suggestion.get('reason', 'Improve SEO')}")
+                                        if suggestion.get('recommendations'):
+                                            display_schema_recommendations(
+                                                suggestion['recommendations'].get('recommendations', '')
+                                            )
 
             except Exception as e:
-                logger.error(f"Error initializing analyzers: {str(e)}")
-                st.error(f"Failed to initialize analysis: {str(e)}")
+                logger.error(f"Error in analysis: {str(e)}")
+                st.error(f"An error occurred during analysis: {str(e)}")
 
     except Exception as e:
         logger.error(f"Application error: {str(e)}")
-        st.error(f"Application error: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
