@@ -161,12 +161,19 @@ class CompetitorAnalyzer:
     def get_schema_usage_stats(self) -> List[Dict[str, Any]]:
         """Get statistics about schema usage among competitors"""
         schema_types = []
-        
-        for url, schemas in self.competitor_data.items():
-            schema_types.extend(schemas.keys())
-            
-        usage_counts = Counter(schema_types)
         total_sites = len(self.competitor_data)
+        
+        # Count unique schema types per site
+        site_schemas = {}
+        for url, schemas in self.competitor_data.items():
+            site_schemas[url] = set(schemas.keys())
+            schema_types.extend(schemas.keys())
+        
+        # Calculate accurate usage counts
+        usage_counts = {}
+        for schema_type in set(schema_types):
+            count = sum(1 for site_schemas in site_schemas.values() if schema_type in site_schemas)
+            usage_counts[schema_type] = count
         
         stats = [
             {
@@ -174,7 +181,7 @@ class CompetitorAnalyzer:
                 'usage_count': count,
                 'percentage': (count / total_sites) * 100 if total_sites else 0
             }
-            for schema_type, count in usage_counts.most_common()
+            for schema_type, count in sorted(usage_counts.items(), key=lambda x: (-x[1], x[0]))
         ]
         
         return stats

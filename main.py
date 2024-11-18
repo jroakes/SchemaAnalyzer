@@ -31,8 +31,8 @@ def format_json_schema(schema_data: Dict) -> str:
 def get_doc_url(schema_row: pd.DataFrame, url_type: str) -> Optional[str]:
     """Safely get documentation URL from schema row"""
     try:
-        if not schema_row.empty and url_type in schema_row.columns:
-            url = schema_row[url_type].values[0]
+        if isinstance(schema_row, pd.DataFrame) and not schema_row.empty and url_type in schema_row.columns:
+            url = schema_row[url_type].iloc[0]
             return None if pd.isna(url) else str(url)
         return None
     except Exception as e:
@@ -259,10 +259,9 @@ def main():
                     status_text.empty()
 
                     # Display results in tabs
-                    analysis_tab, competitor_tab, recommendations_tab = st.tabs([
+                    analysis_tab, competitor_tab = st.tabs([
                         "🔍 Schema Analysis",
-                        "📊 Competitor Insights",
-                        "💡 Recommendations"
+                        "📊 Competitor Insights"
                     ])
 
                     with analysis_tab:
@@ -344,38 +343,47 @@ def main():
                                     # Display recommendations
                                     if schema.get('recommendations'):
                                         display_schema_recommendations(schema['recommendations'])
-
-                        with competitor_tab:
-                            if competitor_data:
-                                st.subheader("Competitor Schema Analysis")
-                                st.markdown("### Schema Usage Among Competitors")
-                                competitor_stats = competitor_analyzer.get_schema_usage_stats()
-                                
-                                if competitor_stats:
-                                    # Create DataFrame for visualization
-                                    stats_df = pd.DataFrame(competitor_stats)
-                                    fig = px.bar(
-                                        stats_df,
-                                        x='schema_type',
-                                        y='percentage',
-                                        title='Schema Usage Distribution',
-                                        labels={'schema_type': 'Schema Type', 'percentage': 'Usage (%)'}
+                                        
+                        # Add suggested additions section
+                        if validation_results.get('suggested_additions'):
+                            st.subheader("💡 Suggested Additions")
+                            for suggestion in validation_results['suggested_additions']:
+                                schema_type = suggestion.get('type', 'Unknown')
+                                with st.expander(f"Add {schema_type} Schema"):
+                                    source = suggestion.get('reason', 'Schema.org')
+                                    st.markdown(
+                                        f'''<div class="source-badge">
+                                            <span class="source-icon">🔄</span>
+                                            <span class="source-text">Source: {source}</span>
+                                        </div>''',
+                                        unsafe_allow_html=True
                                     )
-                                    st.plotly_chart(fig)
+                                    
+                                    display_schema_documentation_links(schema_type, schema_types_df)
+                                    
+                                    if suggestion.get('recommendations'):
+                                        display_schema_recommendations(
+                                            suggestion['recommendations'].get('recommendations', '')
+                                        )
 
-                            else:
-                                st.info("No competitor data available")
-
-                        with recommendations_tab:
-                            st.subheader("💡 Recommendations")
-                            if validation_results.get('suggested_additions'):
-                                for suggestion in validation_results['suggested_additions']:
-                                    with st.expander(f"Add {suggestion['type']} Schema"):
-                                        st.markdown(f"**Why**: {suggestion.get('reason', 'Improve SEO')}")
-                                        if suggestion.get('recommendations'):
-                                            display_schema_recommendations(
-                                                suggestion['recommendations'].get('recommendations', '')
-                                            )
+                    with competitor_tab:
+                        if competitor_data:
+                            st.subheader("Schema Usage Distribution")
+                            competitor_stats = competitor_analyzer.get_schema_usage_stats()
+                            
+                            if competitor_stats:
+                                # Create DataFrame for visualization
+                                stats_df = pd.DataFrame(competitor_stats)
+                                fig = px.bar(
+                                    stats_df,
+                                    x='schema_type',
+                                    y='percentage',
+                                    title='Schema Usage Distribution',
+                                    labels={'schema_type': 'Schema Type', 'percentage': 'Usage (%)'}
+                                )
+                                st.plotly_chart(fig)
+                        else:
+                            st.info("No competitor data available")
 
             except Exception as e:
                 logger.error(f"Error in analysis: {str(e)}")
