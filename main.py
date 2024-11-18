@@ -114,27 +114,41 @@ def display_schema_issues(issues: List[Dict[str, Any]]):
 
 def display_schema_recommendations(recommendations: str):
     """Display schema recommendations with proper formatting"""
+    if not recommendations:
+        return
+        
     st.markdown("### Recommendations")
-    if '|' in recommendations and '---' in recommendations:
-        # Convert markdown table to HTML
-        rows = [row.strip() for row in recommendations.split('\n') if row.strip()]
-        if len(rows) >= 3:  # Ensure we have header, separator, and data
-            table_html = '<table class="styled-table">'
+    
+    # Split content into sections based on headers
+    sections = recommendations.split('##')
+    for section in sections:
+        if not section.strip():
+            continue
             
-            # Add header
-            header = [cell.strip() for cell in rows[0].split('|')[1:-1]]
-            table_html += '<thead><tr>' + ''.join(f'<th>{cell}</th>' for cell in header) + '</tr></thead>'
+        # Check if section contains a table
+        if '|' in section and '---' in section:
+            # Extract table title
+            title = section.split('\n')[0].strip()
+            if title:
+                st.markdown(f"**{title}**")
             
-            # Add data rows
-            table_html += '<tbody>'
-            for row in rows[2:]:
-                cells = [cell.strip() for cell in row.split('|')[1:-1]]
-                table_html += '<tr>' + ''.join(f'<td>{cell}</td>' for cell in cells) + '</tr>'
-            table_html += '</tbody></table>'
+            # Process table content
+            table_content = '\n'.join(
+                line for line in section.split('\n')
+                if '|' in line or '---' in line
+            )
+            st.markdown(table_content)
             
-            st.markdown(table_html, unsafe_allow_html=True)
-    else:
-        st.markdown(recommendations)
+            # Add any remaining content after table
+            remaining = '\n'.join(
+                line for line in section.split('\n')
+                if '|' not in line and '---' not in line and line.strip()
+            )
+            if remaining.strip():
+                st.markdown(remaining)
+        else:
+            # Regular markdown content
+            st.markdown(section)
 
 def main():
     """Main application function with enhanced error handling"""
@@ -312,9 +326,15 @@ def main():
                                     if schema.get('key'):
                                         st.markdown("### Current Implementation")
                                         try:
-                                            schema_json = json.loads(schema['key'])
+                                            # Parse and clean the JSON string
+                                            if isinstance(schema['key'], str):
+                                                schema_json = json.loads(schema['key'])
+                                            else:
+                                                schema_json = schema['key']
+                                            # Display formatted JSON
                                             st.json(schema_json)
-                                        except:
+                                        except json.JSONDecodeError:
+                                            # Fallback to code display if JSON parsing fails
                                             st.code(schema['key'], language='json')
                                     
                                     # Display issues with icons

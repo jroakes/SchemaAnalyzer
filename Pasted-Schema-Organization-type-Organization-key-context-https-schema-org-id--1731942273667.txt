@@ -1,0 +1,63 @@
+Schema: Organization
+
+{
+"type":"Organization"
+"key":"{"@context": "https://schema.org/", "@id": "https://www.reliant.com/#organization", "@type": "Organization", "image": {"@id": "https://www.reliant.com/#logo"}, "logo": {"@id": "https://www.reliant.com/#logo", "@type": "ImageObject", "Name": "Reliant Energy Logo", "caption": "Reliant Energy - Our goal is your happiness.", "inLanguage": "en-US", "url": "https://wheelock.nrg.com/app/assets/images/reliant-logo.png"}, "name": "Reliant Energy", "sameAs": ["https://twitter.com/reliantenergy", "https://www.facebook.com/reliantenergy", "https://www.instagram.com/reliantenergy/", "https://www.youtube.com/user/ReliantEnergyRetail"], "url": "https://www.reliant.com/"}"
+"issues":[
+0:{
+"severity":"warning"
+"message":"Non-standard @context value: https://schema.org/. Use 'https://schema.org'"
+}
+]
+"recommendations":"## 1. Required Properties
+
+**Property Name** | **Impact on Validation**
+---|---|
+**name** | Critical: Failure to include this property will result in validation errors.
+**url** | Critical: Failure to include this property will result in validation errors.
+
+## 2. Recommended Properties
+
+**Property Name** | **Use Cases and Benefits**
+---|---|
+**address** | Provides detailed contact information, improving user experience and local SEO.
+**contactPoint** | Allows users to get in touch with the organization through multiple channels (e.g., phone, email).
+**description** | Describes the organization's activities and purpose, helping users understand its offerings.
+**email** | Provides a direct way for users to contact the organization via email.
+**founder** | Highlights the individuals responsible for establishing the organization.
+**foundingDate** | Gives context about the organization's history and experience.
+**logo** | Displays a visual representation of the organization, enhancing brand recognition.
+**memberOf** | Establishes relationships with other organizations, providing insights into partnerships or affiliations.
+**parentOrganization** | Indicates the parent organization of the listed entity, clarifying its ownership structure.
+**serviceArea** | Specifies the geographic areas where the organization operates, enabling users to determine if it serves their location.
+**telephone** | Provides a phone number for direct contact with the organization.
+
+## 3. Rich Results Properties
+
+**Property Name** | **Google Search Feature**
+---|---|
+**image** | Image Carousel
+**logo** | Organization Knowledge Panel
+
+## 4. Implementation Guidelines
+
+**Common Mistakes to Avoid:**
+
+* Using incorrect or incomplete property values
+* Including duplicate or irrelevant properties
+* Failing to use the correct data type for each property
+
+**Best Practices:**
+
+* Keep the organization's name and URL consistent with its official branding
+* Provide a detailed and informative description
+* Use high-quality, relevant images
+* Test the structured data thoroughly to ensure it validates correctly
+* Monitor performance and make adjustments as needed
+
+**Testing Recommendations:**
+
+* Use Google's Structured Data Testing Tool to validate the implementation
+* Check the organization's appearance in Google Search results for accuracy and completeness
+* Monitor web analytics to track any potential impact on traffic or conversions"
+}
