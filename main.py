@@ -119,36 +119,46 @@ def display_schema_recommendations(recommendations: str):
         
     st.markdown("### Recommendations")
     
-    # Split content into sections based on headers
-    sections = recommendations.split('##')
-    for section in sections:
-        if not section.strip():
-            continue
-            
-        # Check if section contains a table
-        if '|' in section and '---' in section:
-            # Extract table title
-            title = section.split('\n')[0].strip()
-            if title:
-                st.markdown(f"**{title}**")
-            
-            # Process table content
-            table_content = '\n'.join(
-                line for line in section.split('\n')
-                if '|' in line or '---' in line
-            )
-            st.markdown(table_content)
-            
-            # Add any remaining content after table
-            remaining = '\n'.join(
-                line for line in section.split('\n')
-                if '|' not in line and '---' not in line and line.strip()
-            )
-            if remaining.strip():
-                st.markdown(remaining)
+    if isinstance(recommendations, str):
+        # Handle markdown-formatted recommendations
+        if '##' in recommendations:
+            sections = recommendations.split('##')
+            for section in sections:
+                if not section.strip():
+                    continue
+                    
+                lines = section.split('\n')
+                title = lines[0].strip()
+                content = '\n'.join(lines[1:]).strip()
+                
+                if title:
+                    st.markdown(f"#### {title}")
+                
+                if content:
+                    # Check if content contains a table
+                    if '|' in content and '-|-' in content:
+                        # Find table and non-table content
+                        table_lines = []
+                        other_lines = []
+                        
+                        for line in content.split('\n'):
+                            if '|' in line or '-|-' in line:
+                                table_lines.append(line)
+                            elif line.strip():
+                                other_lines.append(line)
+                        
+                        if table_lines:
+                            st.markdown('\n'.join(table_lines))
+                        if other_lines:
+                            st.markdown('\n'.join(other_lines))
+                    else:
+                        st.markdown(content)
         else:
-            # Regular markdown content
-            st.markdown(section)
+            # Handle plain text recommendations
+            st.markdown(recommendations)
+    else:
+        # Handle non-string recommendations (e.g., dict or list)
+        st.json(recommendations)
 
 def main():
     """Main application function with enhanced error handling"""
@@ -309,7 +319,7 @@ def main():
                                 schema_type = schema.get('type', 'Unknown')
                                 with st.expander(f"Schema: {schema_type}"):
                                     # Add source badge
-                                    source = schema.get('reason', 'Schema.org')
+                                    source = schema.get('reason', 'Schema Validation')
                                     st.markdown(
                                         f'''<div class="source-badge">
                                             <span class="source-icon">🔍</span>
@@ -321,69 +331,116 @@ def main():
                                     # Display documentation links
                                     display_schema_documentation_links(schema_type, schema_types_df)
                                     
-                                    # Display formatted JSON schema
+                                    # Display current implementation
                                     if schema.get('key'):
                                         st.markdown("### Current Implementation")
                                         try:
-                                            # Parse and clean the JSON string
                                             if isinstance(schema['key'], str):
                                                 schema_json = json.loads(schema['key'])
                                             else:
                                                 schema_json = schema['key']
-                                            # Display formatted JSON
-                                            st.json(schema_json)
-                                        except json.JSONDecodeError:
-                                            # Fallback to code display if JSON parsing fails
-                                            st.code(schema['key'], language='json')
+                                            st.code(json.dumps(schema_json, indent=2), language='json')
+                                        except (json.JSONDecodeError, TypeError) as e:
+                                            st.code(str(schema['key']), language='json')
                                     
-                                    # Display issues with icons
+                                    # Display issues with improved formatting
                                     if schema.get('issues'):
-                                        display_schema_issues(schema['issues'])
+                                        st.markdown("### Issues Found")
+                                        for issue in schema['issues']:
+                                            severity = issue.get('severity', 'info')
+                                            icon = "🚫" if severity == "error" else "⚠️" if severity == "warning" else "ℹ️"
+                                            message = issue.get('message', '')
+                                            
+                                            st.markdown(
+                                                f'''<div class="issue-{severity}">
+                                                    {icon} <strong>{severity.title()}</strong>: {message}
+                                                </div>''',
+                                                unsafe_allow_html=True
+                                            )
+                                            
+                                            if suggestion := issue.get('suggestion'):
+                                                st.markdown(
+                                                    f'''<div class="suggestion">
+                                                        💡 <em>Suggestion</em>: {suggestion}
+                                                    </div>''',
+                                                    unsafe_allow_html=True
+                                                )
                                     
-                                    # Display recommendations
+                                    # Display recommendations with improved formatting
                                     if schema.get('recommendations'):
-                                        display_schema_recommendations(schema['recommendations'])
-                                        
+                                        st.markdown("### Recommendations")
+                                        recommendations = schema['recommendations']
+                                        display_schema_recommendations(recommendations)
+
                         # Add suggested additions section
                         if validation_results.get('suggested_additions'):
                             st.subheader("💡 Suggested Additions")
-                            for suggestion in validation_results['suggested_additions']:
-                                schema_type = suggestion.get('type', 'Unknown')
-                                with st.expander(f"Add {schema_type} Schema"):
-                                    source = suggestion.get('reason', 'Schema.org')
-                                    st.markdown(
-                                        f'''<div class="source-badge">
-                                            <span class="source-icon">🔄</span>
-                                            <span class="source-text">Source: {source}</span>
-                                        </div>''',
-                                        unsafe_allow_html=True
-                                    )
-                                    
+                            for schema in validation_results['suggested_additions']:
+                                schema_type = schema.get('type', 'Unknown')
+                                with st.expander(f"Schema: {schema_type}"):
+                                    # Display documentation links
                                     display_schema_documentation_links(schema_type, schema_types_df)
                                     
-                                    if suggestion.get('recommendations'):
-                                        display_schema_recommendations(
-                                            suggestion['recommendations'].get('recommendations', '')
-                                        )
+                                    # Display reason for suggestion
+                                    st.markdown(f"**Reason:** {schema.get('reason', 'Recommended Schema')}")
+                                    
+                                    # Display recommendations
+                                    if schema.get('recommendations', {}).get('recommendations'):
+                                        st.markdown("### Implementation Guidelines")
+                                        recommendations = schema['recommendations']['recommendations']
+                                        if isinstance(recommendations, str):
+                                            st.markdown(recommendations)
+                                        else:
+                                            st.json(recommendations)
 
                     with competitor_tab:
                         if competitor_data:
-                            st.subheader("Schema Usage Distribution")
-                            competitor_stats = competitor_analyzer.get_schema_usage_stats()
+                            # Get competitor insights
+                            insights = competitor_analyzer.get_competitor_insights()
                             
-                            if competitor_stats:
-                                # Create DataFrame for visualization
-                                stats_df = pd.DataFrame(competitor_stats)
+                            # Display competitor schema usage
+                            st.subheader("📊 Schema Usage Among Competitors")
+                            
+                            # Create DataFrame for visualization
+                            if insights:
+                                df = pd.DataFrame(insights)
+                                
+                                # Create bar chart
                                 fig = px.bar(
-                                    stats_df,
+                                    df,
                                     x='schema_type',
                                     y='percentage',
-                                    title='Schema Usage Distribution',
+                                    title='Schema Type Usage (%)',
                                     labels={'schema_type': 'Schema Type', 'percentage': 'Usage (%)'}
                                 )
+                                fig.update_layout(
+                                    xaxis_tickangle=-45,
+                                    showlegend=False,
+                                    margin=dict(b=100)
+                                )
                                 st.plotly_chart(fig)
+                                
+                                # Display detailed insights
+                                st.subheader("📋 Detailed Insights")
+                                for insight in insights:
+                                    with st.expander(f"Schema: {insight['schema_type']}"):
+                                        st.markdown(f"""
+                                        - **Usage:** {insight['count']} competitors ({insight['percentage']:.1f}%)
+                                        - **Recommendation:** {insight['recommendation']}
+                                        """)
+                                        
+                                        # Add documentation links
+                                        display_schema_documentation_links(insight['schema_type'], schema_types_df)
+                            
+                            # Display skipped URLs if any
+                            skipped = competitor_analyzer.get_skipped_urls()
+                            if skipped:
+                                st.subheader("⚠️ Analysis Limitations")
+                                st.markdown("The following URLs could not be analyzed:")
+                                for url, reason in skipped.items():
+                                    st.markdown(f"- `{url}`: {reason}")
                         else:
-                            st.info("No competitor data available")
+                            st.info("No competitor data available. Try analyzing with a different keyword.")
 
             except Exception as e:
                 logger.error(f"Error in analysis: {str(e)}")

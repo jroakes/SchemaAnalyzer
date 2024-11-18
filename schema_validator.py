@@ -33,56 +33,61 @@ class SchemaValidator:
             }
 
             for schema_type, schema_data in current_schema.items():
-                # Prepare URL-encoded schema data
-                schema_json = json.dumps(schema_data)
-                encoded_data = urllib.parse.quote(schema_json)
-                
-                # Call Schema.org validator
-                response = requests.get(
-                    'https://validator.schema.org/validate',
-                    params={'data': encoded_data},
-                    headers={'Accept': 'application/json'}
-                )
-                response.raise_for_status()
-                
-                # Parse validation response
-                validation_data = response.json()
-                
                 validation_entry = {
                     'type': schema_type,
-                    'key': schema_json,
+                    'key': json.dumps(schema_data),
                     'issues': []
                 }
 
-                # Process validation results
-                if validation_data.get('totalNumErrors', 0) > 0:
-                    for node in validation_data.get('nodes', []):
-                        for error in node.get('errors', []):
-                            validation_entry['issues'].append({
-                                'severity': 'error',
-                                'message': error.get('message', 'Unknown error')
-                            })
-                    validation_results['needs_improvement'].append(validation_entry)
-                elif validation_data.get('totalNumWarnings', 0) > 0:
-                    for node in validation_data.get('nodes', []):
-                        for warning in node.get('warnings', []):
-                            validation_entry['issues'].append({
-                                'severity': 'warning',
-                                'message': warning.get('message', 'Unknown warning')
-                            })
-                    validation_results['needs_improvement'].append(validation_entry)
-                else:
-                    validation_results['good_schemas'].append(validation_entry)
+                try:
+                    # Basic JSON-LD validation
+                    if '@type' not in schema_data:
+                        validation_entry['issues'].append({
+                            'severity': 'error',
+                            'message': 'Missing required @type property'
+                        })
 
-                validation_results['all_types'].append(schema_type)
+                    if '@context' not in schema_data:
+                        validation_entry['issues'].append({
+                            'severity': 'error',
+                            'message': 'Missing required @context property'
+                        })
 
-                # Add GPT recommendations
-                recommendations = self.gpt_analyzer.generate_property_recommendations(schema_type)
-                if recommendations.get('success'):
-                    validation_entry['recommendations'] = recommendations['recommendations']
+                    # Add GPT recommendations regardless of validation status
+                    recommendations = self.gpt_analyzer.generate_property_recommendations(schema_type)
+                    if recommendations.get('success'):
+                        validation_entry['recommendations'] = recommendations['recommendations']
+
+                    # Classify based on issues
+                    if validation_entry['issues']:
+                        validation_results['needs_improvement'].append(validation_entry)
+                    else:
+                        validation_results['good_schemas'].append(validation_entry)
+
+                    validation_results['all_types'].append(schema_type)
+
+                except Exception as e:
+                    logger.error(f"Error validating schema {schema_type}: {str(e)}")
+                    validation_entry['issues'].append({
+                        'severity': 'error',
+                        'message': f'Validation error: {str(e)}'
+                    })
+                    validation_results['needs_improvement'].append(validation_entry)
+
+            # Add suggested schemas based on competitor analysis
+            competitor_types = self._get_competitor_schema_types()
+            current_types = set(schema_type for schema_type in current_schema.keys())
+            
+            for comp_type in competitor_types:
+                if comp_type not in current_types:
+                    validation_results['suggested_additions'].append({
+                        'type': comp_type,
+                        'reason': "Competitor Implementation",
+                        'recommendations': self.gpt_analyzer.generate_property_recommendations(comp_type)
+                    })
 
             return validation_results
-            
+
         except Exception as e:
             logger.error(f"Error in schema validation: {str(e)}")
             return {
