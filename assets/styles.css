@@ -158,6 +158,28 @@
     color: white;
 }
 
+/* Status badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    font-weight: 500;
+}
+
+.status-badge.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #2e7d32;
+}
+
+.status-badge.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+}
+
 /* Badge styling */
 .source-badge {
     display: inline-flex;
@@ -281,59 +303,4 @@
     margin: 0.5rem 0;
     border-radius: 4px;
     font-style: italic;
-}
-
-/* Recommendation section styling */
-.recommendation-section {
-    background-color: #ffffff;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin: 1rem 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.recommendation-section h4 {
-    color: #1a237e;
-    margin-bottom: 1rem;
-}
-
-.recommendation-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin: 1rem 0;
-}
-
-.recommendation-table th {
-    background-color: #e8eaf6;
-    padding: 0.75rem;
-    text-align: left;
-    border-top: 1px solid #c5cae9;
-    border-bottom: 1px solid #c5cae9;
-}
-
-.recommendation-table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #e8eaf6;
-}
-
-/* Source badge enhancement */
-.source-badge {
-    display: inline-flex;
-    align-items: center;
-    background: #f5f5f5;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    margin: 0.5rem 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.source-icon {
-    font-size: 1.2rem;
-    margin-right: 0.5rem;
-}
-
-.source-text {
-    font-weight: 500;
-    color: #333;
 }

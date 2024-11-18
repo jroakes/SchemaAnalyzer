@@ -302,22 +302,35 @@ def main():
                             for schema in validation_results['good_schemas']:
                                 schema_type = schema.get('type', 'Unknown')
                                 with st.expander(f"Schema: {schema_type}"):
+                                    st.markdown(
+                                        '''<div class="status-badge success">
+                                            ✅ Passed Schema.org Validation
+                                        </div>''',
+                                        unsafe_allow_html=True
+                                    )
+                                    
                                     display_schema_documentation_links(schema_type, schema_types_df)
                                     
-                                    st.markdown("### Implementation Details")
-                                    if isinstance(schema.get('recommendations'), str):
-                                        display_schema_recommendations(schema['recommendations'])
-                                    else:
-                                        st.write("Schema Properties:")
-                                        for key, value in schema.items():
-                                            if key not in ['type', 'recommendations', 'issues']:
-                                                st.markdown(f"**{key}**: {value}")
+                                    st.markdown("### Current Implementation")
+                                    if schema.get('key'):
+                                        try:
+                                            schema_json = json.loads(schema['key']) if isinstance(schema['key'], str) else schema['key']
+                                            st.json(schema_json)  # Use st.json for better formatting
+                                        except json.JSONDecodeError:
+                                            st.code(schema['key'], language='json')
 
                         if validation_results.get('needs_improvement'):
                             st.subheader("🔧 Needs Improvement")
                             for schema in validation_results['needs_improvement']:
                                 schema_type = schema.get('type', 'Unknown')
                                 with st.expander(f"Schema: {schema_type}"):
+                                    st.markdown(
+                                        '''<div class="status-badge error">
+                                            ❌ Failed Schema.org Validation
+                                        </div>''',
+                                        unsafe_allow_html=True
+                                    )
+                                    
                                     # Add source badge
                                     source = schema.get('reason', 'Schema Validation')
                                     st.markdown(
@@ -335,13 +348,10 @@ def main():
                                     if schema.get('key'):
                                         st.markdown("### Current Implementation")
                                         try:
-                                            if isinstance(schema['key'], str):
-                                                schema_json = json.loads(schema['key'])
-                                            else:
-                                                schema_json = schema['key']
-                                            st.code(json.dumps(schema_json, indent=2), language='json')
-                                        except (json.JSONDecodeError, TypeError) as e:
-                                            st.code(str(schema['key']), language='json')
+                                            schema_json = json.loads(schema['key']) if isinstance(schema['key'], str) else schema['key']
+                                            st.json(schema_json)  # Use st.json for better formatting
+                                        except json.JSONDecodeError:
+                                            st.code(schema['key'], language='json')
                                     
                                     # Display issues with improved formatting
                                     if schema.get('issues'):

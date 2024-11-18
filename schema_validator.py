@@ -21,6 +21,11 @@ class SchemaValidator:
         self.validation_cache = {}
         self.last_validation_time = {}
 
+    def _normalize_schema_type(self, schema_type: str) -> str:
+        """Normalize schema type to official format"""
+        schema_type = schema_type.replace('Website', 'WebSite')
+        return schema_type
+
     def validate_schema(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
         try:
             validation_results = {
@@ -32,7 +37,13 @@ class SchemaValidator:
                 'warnings': []
             }
 
+            # Update schema type normalization
+            normalized_schema = {}
             for schema_type, schema_data in current_schema.items():
+                normalized_type = self._normalize_schema_type(schema_type)
+                normalized_schema[normalized_type] = schema_data
+
+            for schema_type, schema_data in normalized_schema.items():
                 validation_entry = {
                     'type': schema_type,
                     'key': json.dumps(schema_data),
@@ -76,7 +87,7 @@ class SchemaValidator:
 
             # Add suggested schemas based on competitor analysis
             competitor_types = self._get_competitor_schema_types()
-            current_types = set(schema_type for schema_type in current_schema.keys())
+            current_types = set(schema_type for schema_type in normalized_schema.keys())
             
             for comp_type in competitor_types:
                 if comp_type not in current_types:

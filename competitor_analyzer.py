@@ -169,17 +169,18 @@ class CompetitorAnalyzer:
             site_schemas[url] = set(schemas.keys())
             schema_types.extend(schemas.keys())
         
-        # Calculate accurate usage counts
+        # Calculate usage counts
         usage_counts = {}
         for schema_type in set(schema_types):
             count = sum(1 for site_schemas in site_schemas.values() if schema_type in site_schemas)
             usage_counts[schema_type] = count
         
+        # Return stats with counts only
         stats = [
             {
                 'schema_type': schema_type,
                 'usage_count': count,
-                'percentage': (count / total_sites) * 100 if total_sites else 0
+                'count': count  # Remove percentage calculation
             }
             for schema_type, count in sorted(usage_counts.items(), key=lambda x: (-x[1], x[0]))
         ]
