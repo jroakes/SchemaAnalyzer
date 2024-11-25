@@ -175,7 +175,29 @@ def main():
         """)
 
         # Input form with improved layout
-        st.markdown('<div class="url-input-form">', unsafe_allow_html=True)
+        # Add form styling
+        st.markdown('''
+            <style>
+                div[data-testid="stForm"] {
+                    background: white;
+                    border-radius: 8px;
+                    padding: 1.5rem;
+                    margin: 1rem 0;
+                    box-shadow: none;
+                }
+                
+                /* Remove any duplicate containers */
+                div.url-input-form {
+                    display: none;
+                }
+                
+                /* Clean up form spacing */
+                div[data-testid="stForm"] > div:first-child {
+                    margin-top: 0;
+                }
+            </style>
+        ''', unsafe_allow_html=True)
+
         with st.form("url_input"):
             st.markdown("### Enter URL and Keyword")
             
@@ -246,7 +268,7 @@ def main():
                 type="primary",
                 help="Click to analyze schema markup and get recommendations"
             )
-        st.markdown('</div>', unsafe_allow_html=True)
+        
 
         if submitted:
             if not url:
