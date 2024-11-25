@@ -191,9 +191,28 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
-            col1, col2, col3 = st.columns([1, 2, 1])
+            # Center the button and apply custom styling
+            _, col2, _ = st.columns([1, 2, 1])
             with col2:
-                submitted = st.form_submit_button("🔍 Analyze Schema")
+                submitted = st.form_submit_button(
+                    "🔍 Analyze Schema",
+                    use_container_width=True,
+                    type="primary",
+                    help="Click to analyze schema markup and get recommendations"
+                )
+                st.markdown("""
+                    <style>
+                    /* Apply custom styling to the submit button */
+                    .stButton > button {
+                        font-size: 1.1rem !important;
+                        height: auto !important;
+                        padding: 0.75rem 2rem !important;
+                        background: linear-gradient(45deg, #2979ff, #1565c0) !important;
+                        border: none !important;
+                        border-radius: 30px !important;
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if submitted:

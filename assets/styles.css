@@ -38,6 +38,38 @@
 }
 
 /* Submit button */
+/* Analyze button specific styling */
+.analyze-button {
+    background: linear-gradient(45deg, #2979ff, #1565c0);
+    color: white;
+    font-weight: 600;
+    padding: 1rem 2rem;
+    border-radius: 30px;
+    border: none;
+    box-shadow: 0 4px 6px rgba(41, 121, 255, 0.2);
+    transition: all 0.3s ease;
+    width: auto !important;
+    margin: 1rem auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.analyze-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
+    background: linear-gradient(45deg, #1565c0, #0d47a1);
+}
+
+.analyze-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(41, 121, 255, 0.2);
+}
+
+.analyze-button .icon {
+    font-size: 1.2rem;
+}
 .stButton > button {
     width: 100%;
     padding: 0.75rem;
