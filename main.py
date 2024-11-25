@@ -192,46 +192,60 @@ def main():
             )
             
             # Create a container for the button with custom styling
-            st.markdown("""
+            st.markdown('''
                 <style>
-                    .custom-button-container {
-                        display: flex;
+                    div[data-testid="stForm"] {
+                        background: white;
+                        border-radius: 8px;
+                        padding: 1rem;
+                        margin-bottom: 1rem;
+                    }
+                    
+                    div.stButton {
+                        text-align: center;
+                        padding: 0;
+                        margin-top: 1rem;
+                    }
+                    
+                    div.stButton > button {
+                        display: inline-flex;
+                        align-items: center;
                         justify-content: center;
-                        margin: 2rem auto;
+                        min-width: 200px;
+                        max-width: 300px;
+                        font-size: 1.2rem;
+                        height: auto;
+                        padding: 1rem 3rem;
+                        background: linear-gradient(45deg, #2979ff, #1565c0);
+                        border: none;
+                        border-radius: 30px;
+                        box-shadow: 0 4px 6px rgba(41, 121, 255, 0.2);
+                        transition: all 0.3s ease;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        margin: 0 auto;
                     }
-                    .stButton > button {
-                        font-size: 1.2rem !important;
-                        height: auto !important;
-                        padding: 1rem 3rem !important;
-                        background: linear-gradient(45deg, #2979ff, #1565c0) !important;
-                        border: none !important;
-                        border-radius: 30px !important;
-                        box-shadow: 0 4px 6px rgba(41, 121, 255, 0.2) !important;
-                        transition: all 0.3s ease !important;
-                        text-transform: uppercase !important;
-                        letter-spacing: 1px !important;
+                    
+                    div.stButton > button:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
+                        background: linear-gradient(45deg, #1565c0, #0d47a1);
                     }
-                    .stButton > button:hover {
-                        transform: translateY(-2px) !important;
-                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3) !important;
-                        background: linear-gradient(45deg, #1565c0, #0d47a1) !important;
-                    }
-                    .stButton > button:active {
-                        transform: translateY(1px) !important;
-                        box-shadow: 0 2px 4px rgba(41, 121, 255, 0.2) !important;
+                    
+                    div.stButton > button:active {
+                        transform: translateY(1px);
+                        box-shadow: 0 2px 4px rgba(41, 121, 255, 0.2);
                     }
                 </style>
-                <div class="custom-button-container">
-            """, unsafe_allow_html=True)
-            
+            ''', unsafe_allow_html=True)
+
+            # Remove the custom container divs since we're handling it with CSS
             submitted = st.form_submit_button(
                 "🔍 Analyze Schema",
                 use_container_width=False,
                 type="primary",
                 help="Click to analyze schema markup and get recommendations"
             )
-            
-            st.markdown("</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if submitted:
