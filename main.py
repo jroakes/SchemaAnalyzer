@@ -215,40 +215,47 @@ def main():
             
             st.markdown('''
                 <style>
-                    /* Reset form container */
+                    /* Form container */
                     div[data-testid="stForm"] {
-                        padding: 1rem;
+                        position: relative;
+                        padding: 2rem;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
                     }
-
-                    /* Target button container directly */
+                    
+                    /* Center the button absolutely */
+                    div.stButton {
+                        position: absolute;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        bottom: 1rem;
+                    }
+                    
+                    /* Style the button itself */
                     div.stButton > button {
-                        display: block !important;
-                        margin: 0 auto !important;
-                        width: auto !important;
-                        min-width: 200px !important;
-                        padding: 0.75rem 2rem !important;
-                        background: linear-gradient(45deg, #2979ff, #1565c0) !important;
-                        color: white !important;
-                        border-radius: 30px !important;
-                        border: none !important;
-                        font-weight: 600 !important;
-                        text-transform: uppercase !important;
-                        letter-spacing: 1px !important;
-                        transition: all 0.3s ease !important;
+                        min-width: 200px;
+                        padding: 0.75rem 2rem;
+                        background: linear-gradient(45deg, #2979ff, #1565c0);
+                        color: white;
+                        border-radius: 30px;
+                        border: none;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        transition: all 0.3s ease;
                     }
-
+                    
                     div.stButton > button:hover {
-                        transform: translateY(-2px) !important;
-                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3) !important;
+                        transform: translateY(-2px);
+                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
                     }
                 </style>
             ''', unsafe_allow_html=True)
 
-            # Remove any additional div wrappers around the button
             submitted = st.form_submit_button(
                 "🔍 Analyze Schema",
-                use_container_width=False,
-                type="primary"
+                use_container_width=False
             )
         
 
