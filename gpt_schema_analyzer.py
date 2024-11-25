@@ -204,24 +204,42 @@ Focus on the following aspects:
         try:
             self._rate_limit_delay()
             
-            prompt = f"""For the Schema.org type '{schema_type}', provide structured recommendations:
+            prompt = f"""For the Schema.org type '{schema_type}', provide detailed structured recommendations:
 
 1. Required Properties:
-   - List all mandatory properties
-   - Impact on validation
+   - List all mandatory properties with explanations
+   - Validation impact and SEO significance
+   - Example values and formats
 
 2. Recommended Properties:
-   - Important optional properties
-   - Use cases and benefits
+   - High-impact optional properties
+   - SEO benefits and use cases
+   - Implementation priority order
+   - Value format examples
 
-3. Rich Results Properties:
-   - Properties needed for rich results
+3. Rich Results Eligibility:
+   - Essential properties for rich results
    - Google Search features enabled
+   - Mobile vs Desktop appearance differences
+   - Testing tools and validation methods
 
-4. Implementation Guidelines:
-   - Common mistakes to avoid
-   - Best practices
-   - Testing recommendations"""
+4. SEO Impact Analysis:
+   - Search visibility benefits
+   - Competitive advantage opportunities
+   - Mobile search implications
+   - Voice search optimization
+
+5. Implementation Best Practices:
+   - Common implementation errors to avoid
+   - Property value formatting guidelines
+   - Cross-linking with other schema types
+   - Mobile-first considerations
+
+6. Testing & Validation:
+   - Google Rich Results Test steps
+   - Schema Markup Validator usage
+   - Common validation errors and fixes
+   - Monitoring recommendations"""
 
             try:
                 result = self._make_gemini_request(prompt)

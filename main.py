@@ -215,33 +215,45 @@ def main():
             
             st.markdown('''
                 <style>
-                    /* Center button container */
+                    /* Improved button container centering */
                     div[data-testid="stForm"] div.stButton {
                         text-align: center;
-                        margin: 1rem auto;
+                        margin: 2rem auto;
                         display: flex;
                         justify-content: center;
+                        align-items: center;
+                        width: 100%;
                     }
                     
-                    /* Button styling */
+                    /* Enhanced button styling */
                     div[data-testid="stForm"] div.stButton > button {
-                        display: inline-block;
-                        min-width: 200px;
-                        max-width: 300px;
-                        padding: 0.75rem 2rem;
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-width: 240px;
+                        max-width: 320px;
+                        height: 48px;
+                        padding: 0.75rem 2.5rem;
                         background: linear-gradient(45deg, #2979ff, #1565c0);
                         color: white;
-                        border-radius: 30px;
+                        border-radius: 24px;
                         border: none;
                         font-weight: 600;
                         text-transform: uppercase;
-                        letter-spacing: 1px;
-                        transition: all 0.3s ease;
+                        letter-spacing: 1.2px;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow: 0 2px 4px rgba(41, 121, 255, 0.1);
                     }
                     
                     div[data-testid="stForm"] div.stButton > button:hover {
                         transform: translateY(-2px);
-                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
+                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.2);
+                        background: linear-gradient(45deg, #2979ff, #1976d2);
+                    }
+
+                    div[data-testid="stForm"] div.stButton > button:active {
+                        transform: translateY(0);
+                        box-shadow: 0 3px 6px rgba(41, 121, 255, 0.15);
                     }
                 </style>
             ''', unsafe_allow_html=True)
