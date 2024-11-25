@@ -39,6 +39,7 @@ class SchemaValidator:
 
             if not current_schema:
                 validation_results['warnings'].append('No schema data found on the page')
+                # Add competitor-based recommendations
                 validation_results['suggested_additions'] = self._get_competitor_recommendations()
                 return validation_results
 
@@ -194,26 +195,26 @@ class SchemaValidator:
             return rich_results
 
     def _get_competitor_recommendations(self) -> List[Dict[str, Any]]:
-        """Get schema recommendations based on competitor usage"""
         try:
+            # Get competitor schema types with their usage counts
             competitor_types = self._get_competitor_schema_types()
-            
-            # Count schema usage among competitors
             type_counts = {}
             for schema_type in competitor_types:
                 type_counts[schema_type] = competitor_types.count(schema_type)
             
-            # Filter for types used by multiple competitors
+            # Only recommend schemas used by multiple competitors
             recommendations = []
             for schema_type, count in type_counts.items():
-                if count > 1:  # Only suggest types used by multiple competitors
+                if count > 1:  # Only suggest if multiple competitors use it
                     recommendations.append({
                         'type': schema_type,
                         'reason': f"Used by {count} competitors",
                         'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
                     })
             
+            # Sort by competitor usage count
             return sorted(recommendations, key=lambda x: int(x['reason'].split()[2]), reverse=True)
+            
         except Exception as e:
-            logger.error(f"Error in competitor recommendations analysis: {str(e)}")
+            logger.error(f"Error in competitor recommendations: {str(e)}")
             return []
