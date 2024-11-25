@@ -213,28 +213,28 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
+            # Remove all existing button CSS
             st.markdown('''
                 <style>
                     /* Form container */
                     div[data-testid="stForm"] {
-                        position: relative;
-                        padding: 2rem;
                         display: flex;
                         flex-direction: column;
-                        align-items: center;
+                        align-items: stretch;
                     }
                     
-                    /* Center the button absolutely */
+                    /* Button wrapper */
                     div.stButton {
-                        position: absolute;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        bottom: 1rem;
+                        display: flex;
+                        justify-content: center;
+                        margin: 1rem 0;
                     }
                     
-                    /* Style the button itself */
+                    /* Button itself */
                     div.stButton > button {
+                        width: auto !important;
                         min-width: 200px;
+                        max-width: 300px;
                         padding: 0.75rem 2rem;
                         background: linear-gradient(45deg, #2979ff, #1565c0);
                         color: white;
@@ -253,9 +253,12 @@ def main():
                 </style>
             ''', unsafe_allow_html=True)
 
+            # Remove the custom container divs since we're handling it with CSS
             submitted = st.form_submit_button(
                 "🔍 Analyze Schema",
-                use_container_width=False
+                use_container_width=False,
+                type="primary",
+                help="Click to analyze schema markup and get recommendations"
             )
         
 
