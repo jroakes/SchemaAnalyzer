@@ -213,52 +213,46 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
-            # Create a container for the button with custom styling
             st.markdown('''
                 <style>
+                    /* Center the form content */
                     div[data-testid="stForm"] {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
                         background: white;
                         border-radius: 8px;
-                        padding: 1rem;
-                        margin-bottom: 1rem;
+                        padding: 1.5rem;
+                        margin: 1rem 0;
                     }
                     
+                    /* Center the button container */
                     div.stButton {
+                        width: 100%;
                         display: flex;
                         justify-content: center;
-                        width: 100%;
-                        padding: 0;
                         margin-top: 1rem;
                     }
                     
+                    /* Style the button itself */
                     div.stButton > button {
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        min-width: 200px;
-                        max-width: 300px;
-                        font-size: 1.2rem;
-                        height: auto;
-                        padding: 1rem 3rem;
                         background: linear-gradient(45deg, #2979ff, #1565c0);
                         border: none;
                         border-radius: 30px;
-                        box-shadow: 0 4px 6px rgba(41, 121, 255, 0.2);
+                        color: white;
+                        font-weight: 600;
+                        padding: 1rem 2rem;
+                        min-width: 200px;
+                        max-width: 300px;
                         transition: all 0.3s ease;
                         text-transform: uppercase;
                         letter-spacing: 1px;
-                        margin: 0;
                     }
                     
                     div.stButton > button:hover {
                         transform: translateY(-2px);
                         box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
                         background: linear-gradient(45deg, #1565c0, #0d47a1);
-                    }
-                    
-                    div.stButton > button:active {
-                        transform: translateY(1px);
-                        box-shadow: 0 2px 4px rgba(41, 121, 255, 0.2);
                     }
                 </style>
             ''', unsafe_allow_html=True)
