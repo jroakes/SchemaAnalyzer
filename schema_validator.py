@@ -186,6 +186,12 @@ class SchemaValidator:
                     rich_results[normalized_type] = {
                         'error': f"Analysis failed: {str(e)}"
                     }
+            
+            return rich_results
+
+        except Exception as e:
+            logger.error(f"Error in rich result analysis: {str(e)}")
+            return rich_results
 
     def _get_competitor_recommendations(self) -> List[Dict[str, Any]]:
         """Get schema recommendations based on competitor usage"""
