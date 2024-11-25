@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import pandas as pd
+from typing import Dict, Any, List, Optional, Union
 import logging
 import sys
 from pathlib import Path
@@ -28,12 +29,17 @@ def format_json_schema(schema_data: Dict) -> str:
     except:
         return str(schema_data)
 
-def get_doc_url(schema_row: pd.DataFrame, url_type: str) -> Optional[str]:
+def get_doc_url(schema_row: Union[pd.DataFrame, pd.Series], url_type: str) -> Optional[str]:
     """Safely get documentation URL from schema row"""
     try:
-        if isinstance(schema_row, pd.DataFrame) and not schema_row.empty and url_type in schema_row.columns:
-            url = schema_row[url_type].iloc[0]
-            return None if pd.isna(url) else str(url)
+        if isinstance(schema_row, pd.DataFrame):
+            if not schema_row.empty and url_type in schema_row.columns:
+                url = schema_row[url_type].iloc[0]
+                return None if pd.isna(url) else str(url)
+        elif isinstance(schema_row, pd.Series):
+            if url_type in schema_row.index:
+                url = schema_row[url_type]
+                return None if pd.isna(url) else str(url)
         return None
     except Exception as e:
         logger.error(f"Error getting {url_type}: {str(e)}")
@@ -191,28 +197,35 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
-            # Center the button and apply custom styling
-            _, col2, _ = st.columns([1, 2, 1])
-            with col2:
-                submitted = st.form_submit_button(
-                    "🔍 Analyze Schema",
-                    use_container_width=True,
-                    type="primary",
-                    help="Click to analyze schema markup and get recommendations"
-                )
-                st.markdown("""
-                    <style>
-                    /* Apply custom styling to the submit button */
-                    .stButton > button {
-                        font-size: 1.1rem !important;
-                        height: auto !important;
-                        padding: 0.75rem 2rem !important;
-                        background: linear-gradient(45deg, #2979ff, #1565c0) !important;
-                        border: none !important;
-                        border-radius: 30px !important;
-                    }
-                    </style>
-                """, unsafe_allow_html=True)
+            # Remove the column layout and apply full width
+            submitted = st.form_submit_button(
+                "🔍 Analyze Schema",
+                use_container_width=True,
+                type="primary",
+                help="Click to analyze schema markup and get recommendations"
+            )
+
+            # Update button styling
+            st.markdown('''
+                <style>
+                .stButton > button {
+                    font-size: 1.1rem !important;
+                    height: auto !important;
+                    padding: 0.75rem 2rem !important;
+                    background: linear-gradient(45deg, #2979ff, #1565c0) !important;
+                    border: none !important;
+                    border-radius: 30px !important;
+                    width: 100% !important;
+                    margin: 1rem 0 !important;
+                }
+                
+                .stButton > button:hover {
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 4px 6px rgba(41, 121, 255, 0.2) !important;
+                    background: linear-gradient(45deg, #1565c0, #0d47a1) !important;
+                }
+                </style>
+            ''', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if submitted:
