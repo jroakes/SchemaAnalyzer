@@ -211,18 +211,32 @@ class SchemaValidator:
             logger.error(f"Error in rich result analysis: {str(e)}")
             return rich_results
 
-    def _get_competitor_recommendations(self) -> List[Dict[str, Any]]:
+    def _get_competitor_recommendations(self, current_schema: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         try:
-            # Get competitor schema types with their usage counts
-            competitor_types = self._get_competitor_schema_types()
-            type_counts = {}
-            for schema_type in competitor_types:
-                type_counts[schema_type] = competitor_types.count(schema_type)
+            # Get competitor schema types from CompetitorAnalyzer
+            competitor_analyzer = CompetitorAnalyzer(self.keyword) if self.keyword else None
+            competitor_data = competitor_analyzer.analyze_competitors() if competitor_analyzer else {}
             
-            # Only recommend schemas used by multiple competitors
+            # Count schema usage among competitors
+            type_counts = {}
+            for url, schemas in competitor_data.items():
+                for schema_type in schemas.keys():
+                    type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
+            
+            # Filter for types that appear in multiple competitor sites
+            multiple_usage_types = {
+                schema_type: count 
+                for schema_type, count in type_counts.items() 
+                if count > 1
+            }
+            
+            # Generate recommendations based on current schema presence
             recommendations = []
-            for schema_type, count in type_counts.items():
-                if count > 1:  # Only suggest if multiple competitors use it
+            current_types = set(current_schema.keys()) if current_schema else set()
+            
+            for schema_type, count in multiple_usage_types.items():
+                # Only suggest types not present in current schema
+                if not current_schema or schema_type not in current_types:
                     recommendations.append({
                         'type': schema_type,
                         'reason': f"Used by {count} competitors",

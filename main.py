@@ -215,21 +215,20 @@ def main():
             
             st.markdown('''
                 <style>
-                    /* Improved button container centering */
+                    /* Absolute positioning for button container */
                     div[data-testid="stForm"] div.stButton {
-                        text-align: center;
-                        margin: 2rem auto;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
+                        position: relative;
+                        height: 80px;
+                        margin: 0;
+                        padding: 0;
                         width: 100%;
                     }
                     
-                    /* Enhanced button styling */
+                    /* Centered button styling */
                     div[data-testid="stForm"] div.stButton > button {
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
+                        position: absolute;
+                        left: 50%;
+                        transform: translateX(-50%);
                         min-width: 240px;
                         max-width: 320px;
                         height: 48px;
