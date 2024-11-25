@@ -15,11 +15,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class SchemaValidator:
-    def __init__(self, schema_types_df):
+    def __init__(self, schema_types_df, keyword=None):
         self.schema_types_df = schema_types_df
         self.gpt_analyzer = GPTSchemaAnalyzer()
         self.validation_cache = {}
         self.last_validation_time = {}
+        self.keyword = keyword
 
     def _normalize_schema_type(self, schema_type: str) -> str:
         """Normalize schema type to official format"""
@@ -117,7 +118,23 @@ class SchemaValidator:
 
     def _get_competitor_schema_types(self) -> List[str]:
         """Get list of schema types commonly used by competitors"""
-        return ['Organization', 'WebSite', 'BreadcrumbList', 'Product', 'Article']
+        if not self.keyword:
+            return ['Organization', 'WebSite', 'BreadcrumbList', 'Product', 'Article']
+            
+        competitor_analyzer = CompetitorAnalyzer(self.keyword)
+        competitor_data = competitor_analyzer.analyze_competitors()
+        
+        # Count schema usage among competitors
+        type_counts = {}
+        for url, schemas in competitor_data.items():
+            for schema_type in schemas.keys():
+                type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
+        
+        # Only return types used by multiple competitors
+        return [
+            schema_type for schema_type, count in type_counts.items()
+            if count > 1  # Only include types used by multiple competitors
+        ]
 
     def get_schema_description(self, schema_type: str) -> Optional[str]:
         """Get detailed description for a schema type"""

@@ -213,26 +213,19 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
-            # Remove all existing button CSS
             st.markdown('''
                 <style>
-                    /* Form container */
-                    div[data-testid="stForm"] {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: stretch;
-                    }
-                    
-                    /* Button wrapper */
-                    div.stButton {
+                    /* Center button container */
+                    div[data-testid="stForm"] div.stButton {
+                        text-align: center;
+                        margin: 1rem auto;
                         display: flex;
                         justify-content: center;
-                        margin: 1rem 0;
                     }
                     
-                    /* Button itself */
-                    div.stButton > button {
-                        width: auto !important;
+                    /* Button styling */
+                    div[data-testid="stForm"] div.stButton > button {
+                        display: inline-block;
                         min-width: 200px;
                         max-width: 300px;
                         padding: 0.75rem 2rem;
@@ -246,7 +239,7 @@ def main():
                         transition: all 0.3s ease;
                     }
                     
-                    div.stButton > button:hover {
+                    div[data-testid="stForm"] div.stButton > button:hover {
                         transform: translateY(-2px);
                         box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
                     }
@@ -287,7 +280,7 @@ def main():
                 # Initialize analyzers
                 schema_analyzer = SchemaAnalyzer(url)
                 competitor_analyzer = CompetitorAnalyzer(keyword)
-                schema_validator = SchemaValidator(schema_types_df)
+                schema_validator = SchemaValidator(schema_types_df, keyword)
 
                 # Extract schema data
                 status_text.text("🔍 Analyzing schema markup...")
