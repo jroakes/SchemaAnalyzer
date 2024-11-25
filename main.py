@@ -168,7 +168,7 @@ def main():
             return
 
         # Title and Description
-        st.title("Schema.org Analysis Tool")
+        st.title("🚂 Schema.org Analysis Tool")
         st.markdown("""
         Analyze your website's schema markup implementation and compare it against competitors.
         Get recommendations for improvements and ensure compliance with schema.org standards.
@@ -224,7 +224,9 @@ def main():
                     }
                     
                     div.stButton {
-                        text-align: center;
+                        display: flex;
+                        justify-content: center;
+                        width: 100%;
                         padding: 0;
                         margin-top: 1rem;
                     }
@@ -245,7 +247,7 @@ def main():
                         transition: all 0.3s ease;
                         text-transform: uppercase;
                         letter-spacing: 1px;
-                        margin: 0 auto;
+                        margin: 0;
                     }
                     
                     div.stButton > button:hover {
