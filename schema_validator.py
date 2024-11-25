@@ -150,29 +150,42 @@ class SchemaValidator:
         try:
             for schema_type, schema_data in current_schema.items():
                 try:
-                    try:
-                        normalized_type = clean_schema_type(schema_type)
+                    normalized_type = clean_schema_type(schema_type)
 
-                        # Ensure proper data handling
-                        if isinstance(schema_data, dict):
-                            schema_str = json.dumps(schema_data)
-                        else:
-                            schema_str = str(schema_data)
+                    # Ensure proper data handling
+                    if isinstance(schema_data, dict):
+                        schema_str = json.dumps(schema_data)
+                    else:
+                        schema_str = str(schema_data)
 
-                        # Get GPT analysis
-                        analysis = self.gpt_analyzer.analyze_schema_implementation(schema_str)
+                    # Get GPT analysis
+                    analysis = self.gpt_analyzer.analyze_schema_implementation(schema_str)
 
-                        # Get Google documentation URL
-                        google_doc = None
-                        if normalized_type in self.schema_types_df['Name'].values:
-                            google_doc = self.schema_types_df[
-                                self.schema_types_df['Name'] == normalized_type
-                            ]['Google Doc URL'].iloc[0]
+                    # Get Google documentation URL
+                    google_doc = None
+                    if normalized_type in self.schema_types_df['Name'].values:
+                        google_doc = self.schema_types_df[
+                            self.schema_types_df['Name'] == normalized_type
+                        ]['Google Doc URL'].iloc[0]
 
-                        rich_results[normalized_type] = {
+                    rich_results[normalized_type] = {
                         'potential': analysis.get('recommendations', ''),
                         'current_implementation': analysis.get('documentation_analysis', ''),
                         'competitor_insights': analysis.get('competitor_insights', ''),
+                        'google_documentation': google_doc,
+                        'validation_timestamp': datetime.now().isoformat()
+                    }
+
+                except Exception as e:
+                    logger.error(f"Error analyzing rich results for {schema_type}: {str(e)}")
+                    rich_results[normalized_type] = {
+                        'error': f"Analysis failed: {str(e)}"
+                    }
+
+        except Exception as e:
+            logger.error(f"Error in rich results analysis: {str(e)}")
+            
+        return rich_results
                         'google_documentation': google_doc,
                         'validation_timestamp': datetime.now().isoformat()
                     }
