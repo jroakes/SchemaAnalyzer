@@ -213,52 +213,42 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
-            # Remove all existing button CSS
             st.markdown('''
                 <style>
-                    /* Form container */
+                    /* Reset form container */
                     div[data-testid="stForm"] {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: stretch;
+                        padding: 1rem;
                     }
-                    
-                    /* Button wrapper */
-                    div.stButton {
-                        display: flex;
-                        justify-content: center;
-                        margin: 1rem 0;
-                    }
-                    
-                    /* Button itself */
+
+                    /* Target button container directly */
                     div.stButton > button {
+                        display: block !important;
+                        margin: 0 auto !important;
                         width: auto !important;
-                        min-width: 200px;
-                        max-width: 300px;
-                        padding: 0.75rem 2rem;
-                        background: linear-gradient(45deg, #2979ff, #1565c0);
-                        color: white;
-                        border-radius: 30px;
-                        border: none;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        transition: all 0.3s ease;
+                        min-width: 200px !important;
+                        padding: 0.75rem 2rem !important;
+                        background: linear-gradient(45deg, #2979ff, #1565c0) !important;
+                        color: white !important;
+                        border-radius: 30px !important;
+                        border: none !important;
+                        font-weight: 600 !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 1px !important;
+                        transition: all 0.3s ease !important;
                     }
-                    
+
                     div.stButton > button:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3);
+                        transform: translateY(-2px) !important;
+                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3) !important;
                     }
                 </style>
             ''', unsafe_allow_html=True)
 
-            # Remove the custom container divs since we're handling it with CSS
+            # Remove any additional div wrappers around the button
             submitted = st.form_submit_button(
                 "🔍 Analyze Schema",
                 use_container_width=False,
-                type="primary",
-                help="Click to analyze schema markup and get recommendations"
+                type="primary"
             )
         
 
