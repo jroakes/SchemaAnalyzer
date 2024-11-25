@@ -191,28 +191,47 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
-            # Center the button and apply custom styling
-            _, col2, _ = st.columns([1, 2, 1])
-            with col2:
-                submitted = st.form_submit_button(
-                    "🔍 Analyze Schema",
-                    use_container_width=True,
-                    type="primary",
-                    help="Click to analyze schema markup and get recommendations"
-                )
-                st.markdown("""
-                    <style>
-                    /* Apply custom styling to the submit button */
+            # Create a container for the button with custom styling
+            st.markdown("""
+                <style>
+                    .custom-button-container {
+                        display: flex;
+                        justify-content: center;
+                        margin: 2rem auto;
+                    }
                     .stButton > button {
-                        font-size: 1.1rem !important;
+                        font-size: 1.2rem !important;
                         height: auto !important;
-                        padding: 0.75rem 2rem !important;
+                        padding: 1rem 3rem !important;
                         background: linear-gradient(45deg, #2979ff, #1565c0) !important;
                         border: none !important;
                         border-radius: 30px !important;
+                        box-shadow: 0 4px 6px rgba(41, 121, 255, 0.2) !important;
+                        transition: all 0.3s ease !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 1px !important;
                     }
-                    </style>
-                """, unsafe_allow_html=True)
+                    .stButton > button:hover {
+                        transform: translateY(-2px) !important;
+                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.3) !important;
+                        background: linear-gradient(45deg, #1565c0, #0d47a1) !important;
+                    }
+                    .stButton > button:active {
+                        transform: translateY(1px) !important;
+                        box-shadow: 0 2px 4px rgba(41, 121, 255, 0.2) !important;
+                    }
+                </style>
+                <div class="custom-button-container">
+            """, unsafe_allow_html=True)
+            
+            submitted = st.form_submit_button(
+                "🔍 Analyze Schema",
+                use_container_width=False,
+                type="primary",
+                help="Click to analyze schema markup and get recommendations"
+            )
+            
+            st.markdown("</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
         if submitted:
@@ -262,17 +281,9 @@ def main():
                 status_text.text("✅ Validating schema...")
                 validation_results = None
                 try:
-                    if schema_data:
-                        validation_results = schema_validator.validate_schema(schema_data)
-                        progress_bar.progress(0.75)
-                    else:
-                        validation_results = {
-                            'good_schemas': [],
-                            'needs_improvement': [],
-                            'suggested_additions': [],
-                            'warnings': ['No schema data found on the page'],
-                            'errors': []
-                        }
+                    validation_results = schema_validator.validate_schema(schema_data)
+                    progress_bar.progress(0.75)
+                    if not schema_data:
                         st.warning("No schema markup found on the page")
                 except Exception as e:
                     logger.error(f"Error validating schema: {str(e)}")

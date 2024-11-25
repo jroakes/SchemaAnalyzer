@@ -37,6 +37,11 @@ class SchemaValidator:
                 'warnings': []
             }
 
+            if not current_schema:
+                validation_results['warnings'].append('No schema data found on the page')
+                validation_results['suggested_additions'] = self._get_competitor_recommendations()
+                return validation_results
+
             # Update schema type normalization
             normalized_schema = {}
             for schema_type, schema_data in current_schema.items():
@@ -182,7 +187,27 @@ class SchemaValidator:
                         'error': f"Analysis failed: {str(e)}"
                     }
 
-        except Exception as e:
-            logger.error(f"Error in rich results analysis: {str(e)}")
+    def _get_competitor_recommendations(self) -> List[Dict[str, Any]]:
+        """Get schema recommendations based on competitor usage"""
+        try:
+            competitor_types = self._get_competitor_schema_types()
             
-        return rich_results
+            # Count schema usage among competitors
+            type_counts = {}
+            for schema_type in competitor_types:
+                type_counts[schema_type] = competitor_types.count(schema_type)
+            
+            # Filter for types used by multiple competitors
+            recommendations = []
+            for schema_type, count in type_counts.items():
+                if count > 1:  # Only suggest types used by multiple competitors
+                    recommendations.append({
+                        'type': schema_type,
+                        'reason': f"Used by {count} competitors",
+                        'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
+                    })
+            
+            return sorted(recommendations, key=lambda x: int(x['reason'].split()[2]), reverse=True)
+        except Exception as e:
+            logger.error(f"Error in competitor recommendations analysis: {str(e)}")
+            return []
