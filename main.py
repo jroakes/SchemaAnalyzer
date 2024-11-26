@@ -10,7 +10,6 @@ from competitor_analyzer import CompetitorAnalyzer
 from schema_validator import SchemaValidator
 from utils import format_schema_data
 import plotly.express as px
-import plotly.graph_objects as go
 import time
 import json
 
@@ -121,6 +120,7 @@ def display_schema_recommendations(recommendations: str):
     st.markdown("### Recommendations")
     
     if isinstance(recommendations, str):
+        # Handle markdown-formatted recommendations
         if '##' in recommendations:
             sections = recommendations.split('##')
             for section in sections:
@@ -135,7 +135,9 @@ def display_schema_recommendations(recommendations: str):
                     st.markdown(f"#### {title}")
                 
                 if content:
+                    # Check if content contains a table
                     if '|' in content and '-|-' in content:
+                        # Find table and non-table content
                         table_lines = []
                         other_lines = []
                         
@@ -152,22 +154,28 @@ def display_schema_recommendations(recommendations: str):
                     else:
                         st.markdown(content)
         else:
+            # Handle plain text recommendations
             st.markdown(recommendations)
     else:
+        # Handle non-string recommendations (e.g., dict or list)
         st.json(recommendations)
 
 def main():
     """Main application function with enhanced error handling"""
     try:
+        # Initialize application
         if not initialize_app():
             return
 
+        # Title and Description
         st.title("🚂 Schema.org Analysis Tool")
         st.markdown("""
         Analyze your website's schema markup implementation and compare it against competitors.
         Get recommendations for improvements and ensure compliance with schema.org standards.
         """)
 
+        # Input form with improved layout
+        # Add form styling
         st.markdown('''
             <style>
                 div[data-testid="stForm"] {
@@ -177,9 +185,13 @@ def main():
                     margin: 1rem 0;
                     box-shadow: none;
                 }
+                
+                /* Remove any duplicate containers */
                 div.url-input-form {
                     display: none;
                 }
+                
+                /* Clean up form spacing */
                 div[data-testid="stForm"] > div:first-child {
                     margin-top: 0;
                 }
@@ -201,7 +213,10 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
+            # Create three columns for button centering
             col1, col2, col3 = st.columns([1, 2, 1])
+
+            # Place the button in the middle column
             with col2:
                 submitted = st.form_submit_button(
                     "🔍 Analyze Schema",
@@ -210,6 +225,7 @@ def main():
                     help="Click to analyze schema markup and get recommendations"
                 )
 
+            # Add minimal CSS just for button styling (not positioning)
             st.markdown('''
                 <style>
                 div.stButton > button {
@@ -224,6 +240,7 @@ def main():
                 }
                 </style>
             ''', unsafe_allow_html=True)
+        
 
         if submitted:
             if not url:
@@ -233,11 +250,13 @@ def main():
                 st.error("Please enter a target keyword")
                 return
 
+            # Initialize progress components
             progress_bar = st.progress(0)
             status_text = st.empty()
             error_container = st.empty()
 
             try:
+                # Load schema types
                 try:
                     schema_types_df = pd.read_csv('supported_schema.csv')
                 except Exception as e:
@@ -245,14 +264,17 @@ def main():
                     st.error("Failed to load schema types data. Please try again.")
                     return
 
+                # Initialize analyzers
                 schema_analyzer = SchemaAnalyzer(url)
                 competitor_analyzer = CompetitorAnalyzer(keyword)
                 schema_validator = SchemaValidator(schema_types_df, keyword)
 
+                # Extract schema data
                 status_text.text("🔍 Analyzing schema markup...")
                 schema_data = schema_analyzer.extract_schema()
                 progress_bar.progress(0.25)
 
+                # Analyze competitors
                 status_text.text("🔄 Analyzing competitors...")
                 competitor_data = {}
                 try:
@@ -263,6 +285,7 @@ def main():
                     logger.error(f"Error analyzing competitors: {str(e)}")
                     error_container.error(f"Error analyzing competitors: {str(e)}")
 
+                # Validate schema
                 status_text.text("✅ Validating schema...")
                 validation_results = None
                 try:
@@ -275,6 +298,7 @@ def main():
                     error_container.error(f"Error validating schema: {str(e)}")
                     return
 
+                # Display results
                 if validation_results:
                     progress_bar.progress(1.0)
                     status_text.text("✨ Analysis complete!")
@@ -282,12 +306,14 @@ def main():
                     progress_bar.empty()
                     status_text.empty()
 
+                    # Display results in tabs
                     analysis_tab, competitor_tab = st.tabs([
                         "🔍 Schema Analysis",
                         "📊 Competitor Insights"
                     ])
 
                     with analysis_tab:
+                        # Summary metrics
                         col1, col2, col3 = st.columns(3)
                         with col1:
                             st.metric(
@@ -308,147 +334,226 @@ def main():
                                 help="Number of recommended new schemas"
                             )
 
-                    with competitor_tab:
-                        st.subheader("📊 Schema Implementation Comparison")
-                        
-                        try:
-                            with st.spinner("Analyzing competitor data..."):
-                                competitor_analyzer = CompetitorAnalyzer(keyword)
-                                competitor_data = competitor_analyzer.analyze_competitors()
+                        with competitor_tab:
+                            st.subheader("📊 Schema Implementation Comparison")
+                            
+                            # Get competitor insights
+                            competitor_analyzer = CompetitorAnalyzer(keyword)
+                            competitor_data = competitor_analyzer.analyze_competitors()
+                            insights = competitor_analyzer.get_competitor_insights()
+                            
+                            # Create visualization data
+                            if insights:
+                                df = pd.DataFrame(insights)
                                 
-                                if not competitor_data:
-                                    st.warning("No competitor data available for analysis.")
-                                    return
-                                    
-                                insights = competitor_analyzer.get_competitor_insights()
+                                # Bar chart for schema usage
+                                fig = px.bar(df, 
+                                           x='schema_type', 
+                                           y='percentage',
+                                           title='Schema Usage Across Competitors',
+                                           labels={'schema_type': 'Schema Type', 
+                                                  'percentage': 'Usage Percentage (%)'},
+                                           color='percentage',
+                                           color_continuous_scale='Viridis')
                                 
-                                if insights:
-                                    # Create main DataFrame for visualizations
-                                    df = pd.DataFrame(insights)
-                                    
-                                    # 1. Schema Usage Bar Chart
-                                    st.subheader("Schema Usage Distribution")
-                                    fig_usage = px.bar(
-                                        df,
-                                        x='schema_type',
-                                        y='percentage',
-                                        title='Schema Usage Across Competitors',
-                                        labels={
-                                            'schema_type': 'Schema Type',
-                                            'percentage': 'Usage Percentage (%)'
-                                        },
-                                        color='percentage',
-                                        color_continuous_scale='Viridis'
-                                    )
-                                    
-                                    fig_usage.update_layout(
-                                        xaxis_tickangle=-45,
-                                        showlegend=False,
-                                        height=500,
-                                        margin=dict(t=30, b=50)
-                                    )
-                                    
-                                    st.plotly_chart(fig_usage, use_container_width=True)
-                                    
-                                    # 2. Implementation Comparison
+                                fig.update_layout(
+                                    xaxis_tickangle=-45,
+                                    showlegend=False,
+                                    height=500
+                                )
+                                
+                                st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Detailed statistics table
+                                st.subheader("📈 Detailed Statistics")
+                                stats_df = df[['schema_type', 'count', 'percentage']].copy()
+                                stats_df.columns = ['Schema Type', 'Number of Competitors', 'Usage Percentage (%)']
+                                stats_df['Usage Percentage (%)'] = stats_df['Usage Percentage (%)'].round(1)
+                                st.dataframe(stats_df, use_container_width=True)
+                                
+                                # Current implementation comparison
+                                if schema_data:
                                     st.subheader("🔄 Your Implementation vs Competitors")
-                                    current_types = set(schema_data.keys()) if schema_data else set()
-                                    
+                                    current_types = set(schema_data.keys())
                                     comparison_data = []
+                                    
                                     for schema_type in set(df['schema_type']):
                                         competitor_usage = df[df['schema_type'] == schema_type]['percentage'].iloc[0]
-                                        implemented = schema_type in current_types
+                                        status = "✅ Implemented" if schema_type in current_types else "❌ Missing"
                                         comparison_data.append({
                                             'Schema Type': schema_type,
-                                            'Your Implementation': 1 if implemented else 0,
-                                            'Competitor Usage (%)': competitor_usage,
-                                            'Status': "✅ Implemented" if implemented else "❌ Missing"
+                                            'Status': status,
+                                            'Competitor Usage': f"{competitor_usage:.1f}%"
                                         })
                                     
                                     comparison_df = pd.DataFrame(comparison_data)
-                                    
-                                    # Create grouped bar chart
-                                    fig_comparison = go.Figure(data=[
-                                        go.Bar(
-                                            name='Your Implementation',
-                                            x=comparison_df['Schema Type'],
-                                            y=comparison_df['Your Implementation'],
-                                            marker_color='#2979ff'
-                                        ),
-                                        go.Bar(
-                                            name='Competitor Usage (%)',
-                                            x=comparison_df['Schema Type'],
-                                            y=comparison_df['Competitor Usage (%)'],
-                                            marker_color='#00c853',
-                                            opacity=0.7
-                                        )
-                                    ])
-                                    
-                                    fig_comparison.update_layout(
-                                        barmode='group',
-                                        title='Schema Implementation Comparison',
-                                        xaxis_tickangle=-45,
-                                        height=500,
-                                        margin=dict(t=30, b=50)
+                                    st.dataframe(comparison_df, use_container_width=True)
+                            else:
+                                st.info("No competitor data available for comparison.")
+
+                        # Display schema details
+                        if validation_results.get('good_schemas'):
+                            st.subheader("✅ Good Implementations")
+                            for schema in validation_results['good_schemas']:
+                                schema_type = schema.get('type', 'Unknown')
+                                with st.expander(f"Schema: {schema_type}"):
+                                    st.markdown(
+                                        '''<div class="status-badge success">
+                                            ✅ Passed Schema.org Validation
+                                        </div>''',
+                                        unsafe_allow_html=True
                                     )
                                     
-                                    st.plotly_chart(fig_comparison, use_container_width=True)
+                                    display_schema_documentation_links(schema_type, schema_types_df)
                                     
-                                    # 3. Summary Statistics
-                                    col1, col2 = st.columns(2)
-                                    with col1:
-                                        st.metric(
-                                            "Total Competitors Analyzed",
-                                            len(competitor_data),
-                                            help="Number of competitor websites analyzed"
-                                        )
-                                    with col2:
-                                        implementation_rate = len([
-                                            1 for row in comparison_data 
-                                            if row['Your Implementation'] == 1
-                                        ]) / len(comparison_data) * 100
-                                        st.metric(
-                                            "Your Implementation Rate",
-                                            f"{implementation_rate:.1f}%",
-                                            help="Percentage of competitor schemas you have implemented"
-                                        )
-                                    
-                                    # 4. Detailed Comparison Table
-                                    st.subheader("📋 Detailed Schema Comparison")
-                                    st.dataframe(
-                                        comparison_df.style.apply(
-                                            lambda x: ['background-color: #e8f5e9' if v == "✅ Implemented"
-                                            else 'background-color: #ffebee' for v in x
-                                            ],
-                                            subset=['Status']
-                                        ),
-                                        use_container_width=True
+                                    st.markdown("### Current Implementation")
+                                    if schema.get('key'):
+                                        try:
+                                            schema_json = json.loads(schema['key']) if isinstance(schema['key'], str) else schema['key']
+                                            st.json(schema_json)  # Use st.json for better formatting
+                                        except json.JSONDecodeError:
+                                            st.code(schema['key'], language='json')
+
+                        if validation_results.get('needs_improvement'):
+                            st.subheader("🔧 Needs Improvement")
+                            for schema in validation_results['needs_improvement']:
+                                schema_type = schema.get('type', 'Unknown')
+                                with st.expander(f"Schema: {schema_type}"):
+                                    st.markdown(
+                                        '''<div class="status-badge error">
+                                            ❌ Failed Schema.org Validation
+                                        </div>''',
+                                        unsafe_allow_html=True
                                     )
                                     
-                                    # 5. Recommendations based on comparison
-                                    st.subheader("💡 Implementation Recommendations")
-                                    missing_schemas = comparison_df[comparison_df['Your Implementation'] == 0].sort_values(
-                                        by='Competitor Usage (%)', 
-                                        ascending=False
+                                    # Add source badge
+                                    source = schema.get('reason', 'Schema Validation')
+                                    st.markdown(
+                                        f'''<div class="source-badge">
+                                            <span class="source-icon">🔍</span>
+                                            <span class="source-text">Source: {source}</span>
+                                        </div>''',
+                                        unsafe_allow_html=True
                                     )
                                     
-                                    if not missing_schemas.empty:
-                                        st.warning("#### Priority Implementation Suggestions")
-                                        for _, row in missing_schemas.iterrows():
+                                    # Display documentation links
+                                    display_schema_documentation_links(schema_type, schema_types_df)
+                                    
+                                    # Display current implementation
+                                    if schema.get('key'):
+                                        st.markdown("### Current Implementation")
+                                        try:
+                                            schema_json = json.loads(schema['key']) if isinstance(schema['key'], str) else schema['key']
+                                            st.json(schema_json)  # Use st.json for better formatting
+                                        except json.JSONDecodeError:
+                                            st.code(schema['key'], language='json')
+                                    
+                                    # Display issues with improved formatting
+                                    if schema.get('issues'):
+                                        st.markdown("### Issues Found")
+                                        for issue in schema['issues']:
+                                            severity = issue.get('severity', 'info')
+                                            icon = "🚫" if severity == "error" else "⚠️" if severity == "warning" else "ℹ️"
+                                            message = issue.get('message', '')
+                                            
                                             st.markdown(
-                                                f"- **{row['Schema Type']}**: {row['Competitor Usage (%)']}% of competitors "
-                                                f"use this schema type"
+                                                f'''<div class="issue-{severity}">
+                                                    {icon} <strong>{severity.title()}</strong>: {message}
+                                                </div>''',
+                                                unsafe_allow_html=True
                                             )
-                                    else:
-                                        st.success("✨ Great job! You've implemented all common schema types used by competitors.")
+                                            
+                                            if suggestion := issue.get('suggestion'):
+                                                st.markdown(
+                                                    f'''<div class="suggestion">
+                                                        💡 <em>Suggestion</em>: {suggestion}
+                                                    </div>''',
+                                                    unsafe_allow_html=True
+                                                )
                                     
-                            except Exception as e:
-                                logger.error(f"Error in competitor analysis visualization: {str(e)}")
-                                st.error(f"Error creating competitor analysis visualization: {str(e)}")
+                                    # Display recommendations with improved formatting
+                                    if schema.get('recommendations'):
+                                        st.markdown("### Recommendations")
+                                        recommendations = schema['recommendations']
+                                        display_schema_recommendations(recommendations)
+
+                        # Add suggested additions section
+                        if validation_results.get('suggested_additions'):
+                            st.subheader("💡 Suggested Additions")
+                            for schema in validation_results['suggested_additions']:
+                                schema_type = schema.get('type', 'Unknown')
+                                with st.expander(f"Schema: {schema_type}"):
+                                    # Display documentation links
+                                    display_schema_documentation_links(schema_type, schema_types_df)
+                                    
+                                    # Display reason for suggestion
+                                    st.markdown(f"**Reason:** {schema.get('reason', 'Recommended Schema')}")
+                                    
+                                    # Display recommendations
+                                    if schema.get('recommendations', {}).get('recommendations'):
+                                        st.markdown("### Implementation Guidelines")
+                                        recommendations = schema['recommendations']['recommendations']
+                                        if isinstance(recommendations, str):
+                                            st.markdown(recommendations)
+                                        else:
+                                            st.json(recommendations)
+
+                    with competitor_tab:
+                        if competitor_data:
+                            # Get competitor insights
+                            insights = competitor_analyzer.get_competitor_insights()
+                            
+                            # Display competitor schema usage
+                            st.subheader("📊 Schema Usage Among Competitors")
+                            
+                            # Create DataFrame for visualization
+                            if insights:
+                                df = pd.DataFrame(insights)
                                 
+                                # Create bar chart
+                                fig = px.bar(
+                                    df,
+                                    x='schema_type',
+                                    y='percentage',
+                                    title='Schema Type Usage (%)',
+                                    labels={'schema_type': 'Schema Type', 'percentage': 'Usage (%)'}
+                                )
+                                fig.update_layout(
+                                    xaxis_tickangle=-45,
+                                    showlegend=False,
+                                    margin=dict(b=100)
+                                )
+                                st.plotly_chart(fig)
+                                
+                                # Display detailed insights
+                                st.subheader("📋 Detailed Insights")
+                                for insight in insights:
+                                    with st.expander(f"Schema: {insight['schema_type']}"):
+                                        st.markdown(f"""
+                                        - **Usage:** {insight['count']} competitors ({insight['percentage']:.1f}%)
+                                        - **Recommendation:** {insight['recommendation']}
+                                        """)
+                                        
+                                        # Add documentation links
+                                        display_schema_documentation_links(insight['schema_type'], schema_types_df)
+                            
+                            # Display skipped URLs if any
+                            skipped = competitor_analyzer.get_skipped_urls()
+                            if skipped:
+                                st.subheader("⚠️ Analysis Limitations")
+                                st.markdown("The following URLs could not be analyzed:")
+                                for url, reason in skipped.items():
+                                    st.markdown(f"- `{url}`: {reason}")
+                        else:
+                            st.info("No competitor data available. Try analyzing with a different keyword.")
+
             except Exception as e:
-                logger.error(f"Error in main analysis: {str(e)}")
+                logger.error(f"Error in analysis: {str(e)}")
                 st.error(f"An error occurred during analysis: {str(e)}")
+
+    except Exception as e:
+        logger.error(f"Application error: {str(e)}")
+        st.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
