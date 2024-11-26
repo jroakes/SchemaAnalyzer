@@ -16,6 +16,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class SchemaValidator:
+    SCHEMA_VALIDATOR_ENDPOINT = "https://validator.schema.org/validate"
+
     def __init__(self, schema_types_df, keyword=None):
         self.schema_types_df = schema_types_df
         self.gpt_analyzer = GPTSchemaAnalyzer()
@@ -27,6 +29,58 @@ class SchemaValidator:
         """Normalize schema type to official format"""
         schema_type = schema_type.replace('Website', 'WebSite')
         return schema_type
+
+    def _validate_with_schema_org(self, url: str) -> Dict[str, Any]:
+        """Validate schema using official Schema.org validator"""
+        try:
+            response = requests.post(self.SCHEMA_VALIDATOR_ENDPOINT, data={"url": url})
+            response.raise_for_status()
+
+            # Handle Schema.org validator's specific response format
+            if response.text.startswith(")]}'"):
+                response_text = response.text[5:]
+            else:
+                response_text = response.text
+
+            data = json.loads(response_text)
+            return self._process_schema_org_response(data)
+        except requests.RequestException as e:
+            logger.error(f"Error validating with Schema.org: {str(e)}")
+            return {
+                'is_valid': False,
+                'errors': [f"Schema.org validation error: {str(e)}"],
+                'warnings': []
+            }
+
+    def _process_schema_org_response(self, data: Dict) -> Dict[str, Any]:
+        """Process and structure Schema.org validator response"""
+        validation_results = {
+            'is_valid': True,
+            'errors': [],
+            'warnings': [],
+            'schema_data': {}
+        }
+
+        try:
+            for triple_group in data.get('tripleGroups', []):
+                for node in triple_group.get('nodes', []):
+                    for prop in node.get('properties', []):
+                        if prop.get('errors'):
+                            validation_results['is_valid'] = False
+                            validation_results['errors'].extend(prop['errors'])
+                        elif prop.get('warnings'):
+                            validation_results['warnings'].extend(prop['warnings'])
+                        else:
+                            validation_results['schema_data'][prop['pred']] = prop['value']
+
+            return validation_results
+        except Exception as e:
+            logger.error(f"Error processing Schema.org response: {str(e)}")
+            return {
+                'is_valid': False,
+                'errors': [f"Error processing validation response: {str(e)}"],
+                'warnings': []
+            }
 
     def validate_schema(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
         try:
@@ -46,10 +100,8 @@ class SchemaValidator:
                     'suggestion': 'Consider implementing schema markup to improve search visibility'
                 })
                 
-                # Get detailed competitor recommendations when no schema is found
                 competitor_recommendations = self._get_competitor_recommendations(current_schema=None)
                 if competitor_recommendations:
-                    # Sort recommendations by priority and limit to top 5 most common schemas
                     top_recommendations = sorted(
                         competitor_recommendations, 
                         key=lambda x: x.get('priority', 0), 
@@ -66,32 +118,12 @@ class SchemaValidator:
                             'schema_url': rec.get('schema_url', ''),
                             'priority': rec.get('priority', 0)
                         })
-                        
-                    # Add a summary of recommendations
+                    
                     validation_results['summary'] = (
                         f"Found {len(top_recommendations)} recommended schema types based on "
                         f"competitor analysis. Top recommendation: {top_recommendations[0]['type']} "
                         f"({top_recommendations[0]['reason']})"
                     )
-                else:
-                    # Fallback recommendations if no competitor data is available
-                    validation_results['suggested_additions'].extend([
-                        {
-                            'type': 'Organization',
-                            'reason': 'Essential for business websites',
-                            'priority': 5
-                        },
-                        {
-                            'type': 'WebSite',
-                            'reason': 'Basic website information',
-                            'priority': 4
-                        },
-                        {
-                            'type': 'BreadcrumbList',
-                            'reason': 'Improves site navigation structure',
-                            'priority': 3
-                        }
-                    ])
                 return validation_results
 
             # Update schema type normalization
@@ -108,18 +140,16 @@ class SchemaValidator:
                 }
 
                 try:
-                    # Basic JSON-LD validation
-                    if '@type' not in schema_data:
-                        validation_entry['issues'].append({
-                            'severity': 'error',
-                            'message': 'Missing required @type property'
-                        })
-
-                    if '@context' not in schema_data:
-                        validation_entry['issues'].append({
-                            'severity': 'error',
-                            'message': 'Missing required @context property'
-                        })
+                    # Validate using Schema.org validator
+                    schema_org_validation = self._validate_with_schema_org(schema_data.get('@context', ''))
+                    
+                    if not schema_org_validation['is_valid']:
+                        validation_entry['issues'].extend([
+                            {'severity': 'error', 'message': error}
+                            for error in schema_org_validation['errors']
+                        ])
+                    
+                    validation_entry['warnings'] = schema_org_validation['warnings']
 
                     # Add GPT recommendations regardless of validation status
                     recommendations = self.gpt_analyzer.generate_property_recommendations(schema_type)
@@ -266,13 +296,9 @@ class SchemaValidator:
             if not self.keyword:
                 return []
                 
-            # Initialize CompetitorAnalyzer with keyword
             competitor_analyzer = CompetitorAnalyzer(self.keyword)
-            
-            # Get competitor data
             competitor_data = competitor_analyzer.analyze_competitors()
             
-            # Count schema usage among competitors and collect examples
             type_counts = {}
             type_examples = {}
             for url, schemas in competitor_data.items():
@@ -282,11 +308,10 @@ class SchemaValidator:
                         type_examples[schema_type] = schema_content
                     type_counts[schema_type] += 1
             
-            # Generate recommendations for types used by multiple competitors
             recommendations = []
             
             for schema_type, count in type_counts.items():
-                if count > 1:  # Only include types used by multiple competitors
+                if count > 1:
                     gpt_recommendations = self.gpt_analyzer.generate_property_recommendations(schema_type)
                     example_schema = type_examples[schema_type]
                     
@@ -295,10 +320,9 @@ class SchemaValidator:
                         'reason': f'Used by {count} competitors',
                         'recommendations': gpt_recommendations,
                         'example_implementation': example_schema,
-                        'priority': count  # Higher count means higher priority
+                        'priority': count
                     }
                     
-                    # Add common properties from schema.org if available
                     schema_info = self.schema_types_df[self.schema_types_df['Name'] == schema_type]
                     if not schema_info.empty:
                         recommendation['schema_description'] = schema_info['Description'].iloc[0]
@@ -306,7 +330,6 @@ class SchemaValidator:
                     
                     recommendations.append(recommendation)
             
-            # Sort recommendations by priority (competitor usage count)
             recommendations.sort(key=lambda x: x['priority'], reverse=True)
             
             return recommendations
