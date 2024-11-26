@@ -40,11 +40,58 @@ class SchemaValidator:
             }
 
             if not current_schema:
-                validation_results['warnings'].append('No schema data found on the page')
-                # Get competitor recommendations when no schema is found
+                validation_results['warnings'].append({
+                    'severity': 'warning',
+                    'message': 'No schema data found on the page',
+                    'suggestion': 'Consider implementing schema markup to improve search visibility'
+                })
+                
+                # Get detailed competitor recommendations when no schema is found
                 competitor_recommendations = self._get_competitor_recommendations(current_schema=None)
                 if competitor_recommendations:
-                    validation_results['suggested_additions'].extend(competitor_recommendations)
+                    # Sort recommendations by priority and limit to top 5 most common schemas
+                    top_recommendations = sorted(
+                        competitor_recommendations, 
+                        key=lambda x: x.get('priority', 0), 
+                        reverse=True
+                    )[:5]
+                    
+                    for rec in top_recommendations:
+                        validation_results['suggested_additions'].append({
+                            'type': rec['type'],
+                            'reason': rec['reason'],
+                            'recommendations': rec['recommendations'],
+                            'example_implementation': rec['example_implementation'],
+                            'schema_description': rec.get('schema_description', ''),
+                            'schema_url': rec.get('schema_url', ''),
+                            'priority': rec.get('priority', 0)
+                        })
+                        
+                    # Add a summary of recommendations
+                    validation_results['summary'] = (
+                        f"Found {len(top_recommendations)} recommended schema types based on "
+                        f"competitor analysis. Top recommendation: {top_recommendations[0]['type']} "
+                        f"({top_recommendations[0]['reason']})"
+                    )
+                else:
+                    # Fallback recommendations if no competitor data is available
+                    validation_results['suggested_additions'].extend([
+                        {
+                            'type': 'Organization',
+                            'reason': 'Essential for business websites',
+                            'priority': 5
+                        },
+                        {
+                            'type': 'WebSite',
+                            'reason': 'Basic website information',
+                            'priority': 4
+                        },
+                        {
+                            'type': 'BreadcrumbList',
+                            'reason': 'Improves site navigation structure',
+                            'priority': 3
+                        }
+                    ])
                 return validation_results
 
             # Update schema type normalization
@@ -225,22 +272,42 @@ class SchemaValidator:
             # Get competitor data
             competitor_data = competitor_analyzer.analyze_competitors()
             
-            # Count schema usage among competitors
+            # Count schema usage among competitors and collect examples
             type_counts = {}
+            type_examples = {}
             for url, schemas in competitor_data.items():
-                for schema_type in schemas.keys():
-                    type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
+                for schema_type, schema_content in schemas.items():
+                    if schema_type not in type_counts:
+                        type_counts[schema_type] = 0
+                        type_examples[schema_type] = schema_content
+                    type_counts[schema_type] += 1
             
             # Generate recommendations for types used by multiple competitors
             recommendations = []
             
             for schema_type, count in type_counts.items():
                 if count > 1:  # Only include types used by multiple competitors
-                    recommendations.append({
+                    gpt_recommendations = self.gpt_analyzer.generate_property_recommendations(schema_type)
+                    example_schema = type_examples[schema_type]
+                    
+                    recommendation = {
                         'type': schema_type,
                         'reason': f'Used by {count} competitors',
-                        'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
-                    })
+                        'recommendations': gpt_recommendations,
+                        'example_implementation': example_schema,
+                        'priority': count  # Higher count means higher priority
+                    }
+                    
+                    # Add common properties from schema.org if available
+                    schema_info = self.schema_types_df[self.schema_types_df['Name'] == schema_type]
+                    if not schema_info.empty:
+                        recommendation['schema_description'] = schema_info['Description'].iloc[0]
+                        recommendation['schema_url'] = schema_info['Schema URL'].iloc[0]
+                    
+                    recommendations.append(recommendation)
+            
+            # Sort recommendations by priority (competitor usage count)
+            recommendations.sort(key=lambda x: x['priority'], reverse=True)
             
             return recommendations
             
