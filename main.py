@@ -215,15 +215,13 @@ def main():
             
             st.markdown('''
                 <style>
-                    div[data-testid="stForm"] div.stButton {
-                        display: flex;
-                        justify-content: center;
-                        width: 100%;
-                        margin: 2rem 0;
+                    div[data-testid="stForm"] {
+                        text-align: center;
                     }
 
                     div[data-testid="stForm"] div.stButton > button {
-                        width: auto;
+                        position: relative;
+                        margin: 2rem auto;
                         min-width: 200px;
                         padding: 0.75rem 2.5rem;
                         background: linear-gradient(45deg, #2979ff, #1565c0);
@@ -233,18 +231,6 @@ def main():
                         font-weight: 600;
                         text-transform: uppercase;
                         letter-spacing: 1.2px;
-                        transition: all 0.3s ease;
-                    }
-                    
-                    div[data-testid="stForm"] div.stButton > button:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 6px 12px rgba(41, 121, 255, 0.2);
-                        background: linear-gradient(45deg, #2979ff, #1976d2);
-                    }
-
-                    div[data-testid="stForm"] div.stButton > button:active {
-                        transform: translateY(0);
-                        box-shadow: 0 3px 6px rgba(41, 121, 255, 0.15);
                     }
                 </style>
             ''', unsafe_allow_html=True)
