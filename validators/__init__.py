@@ -1,3 +1,3 @@
 from .base_validator import BaseValidator
-from .json_validator import JSONValidator
+from .schema_org_validator import SchemaOrgValidator
 from .competitor_validator import CompetitorValidator
