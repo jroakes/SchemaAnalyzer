@@ -42,9 +42,9 @@ class SchemaValidator:
             if not current_schema:
                 validation_results['warnings'].append('No schema data found on the page')
                 # Get competitor recommendations when no schema is found
-                competitor_recommendations = self._get_competitor_recommendations()
+                competitor_recommendations = self._get_competitor_recommendations(current_schema=None)
                 if competitor_recommendations:
-                    validation_results['suggested_additions'].extend(competitor_recommendations)
+                    validation_results['suggested_additions'] = competitor_recommendations
                 return validation_results
 
             # Update schema type normalization
@@ -216,11 +216,12 @@ class SchemaValidator:
 
     def _get_competitor_recommendations(self, current_schema: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         try:
-            # Initialize CompetitorAnalyzer with keyword
-            competitor_analyzer = CompetitorAnalyzer(self.keyword) if self.keyword else None
-            if not competitor_analyzer:
+            if not self.keyword:
                 return []
                 
+            # Initialize CompetitorAnalyzer with keyword
+            competitor_analyzer = CompetitorAnalyzer(self.keyword)
+            
             # Get competitor data
             competitor_data = competitor_analyzer.analyze_competitors()
             
@@ -228,7 +229,8 @@ class SchemaValidator:
             type_counts = {}
             for url, schemas in competitor_data.items():
                 for schema_type in schemas.keys():
-                    type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
+                    normalized_type = self._normalize_schema_type(schema_type)
+                    type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
             
             # Generate recommendations for types used by multiple competitors
             recommendations = []
@@ -243,8 +245,7 @@ class SchemaValidator:
                             'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
                         })
             
-            # Sort by competitor usage count
-            return sorted(recommendations, key=lambda x: int(x['reason'].split()[2]), reverse=True)
+            return recommendations
             
         except Exception as e:
             logger.error(f"Error in competitor recommendations: {str(e)}")
