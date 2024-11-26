@@ -337,59 +337,132 @@ def main():
                         with competitor_tab:
                             st.subheader("📊 Schema Implementation Comparison")
                             
-                            # Get competitor insights
-                            competitor_analyzer = CompetitorAnalyzer(keyword)
-                            competitor_data = competitor_analyzer.analyze_competitors()
-                            insights = competitor_analyzer.get_competitor_insights()
-                            
-                            # Create visualization data
-                            if insights:
-                                df = pd.DataFrame(insights)
-                                
-                                # Bar chart for schema usage
-                                fig = px.bar(df, 
-                                           x='schema_type', 
-                                           y='percentage',
-                                           title='Schema Usage Across Competitors',
-                                           labels={'schema_type': 'Schema Type', 
-                                                  'percentage': 'Usage Percentage (%)'},
-                                           color='percentage',
-                                           color_continuous_scale='Viridis')
-                                
-                                fig.update_layout(
-                                    xaxis_tickangle=-45,
-                                    showlegend=False,
-                                    height=500
-                                )
-                                
-                                st.plotly_chart(fig, use_container_width=True)
-                                
-                                # Detailed statistics table
-                                st.subheader("📈 Detailed Statistics")
-                                stats_df = df[['schema_type', 'count', 'percentage']].copy()
-                                stats_df.columns = ['Schema Type', 'Number of Competitors', 'Usage Percentage (%)']
-                                stats_df['Usage Percentage (%)'] = stats_df['Usage Percentage (%)'].round(1)
-                                st.dataframe(stats_df, use_container_width=True)
-                                
-                                # Current implementation comparison
-                                if schema_data:
-                                    st.subheader("🔄 Your Implementation vs Competitors")
-                                    current_types = set(schema_data.keys())
-                                    comparison_data = []
+                            try:
+                                # Display loading message
+                                with st.spinner("Analyzing competitor data..."):
+                                    # Get competitor insights
+                                    competitor_analyzer = CompetitorAnalyzer(keyword)
+                                    competitor_data = competitor_analyzer.analyze_competitors()
                                     
-                                    for schema_type in set(df['schema_type']):
-                                        competitor_usage = df[df['schema_type'] == schema_type]['percentage'].iloc[0]
-                                        status = "✅ Implemented" if schema_type in current_types else "❌ Missing"
-                                        comparison_data.append({
-                                            'Schema Type': schema_type,
-                                            'Status': status,
-                                            'Competitor Usage': f"{competitor_usage:.1f}%"
-                                        })
+                                    if not competitor_data:
+                                        st.warning("No competitor data available for analysis.")
+                                        return
+                                        
+                                    insights = competitor_analyzer.get_competitor_insights()
                                     
-                                    comparison_df = pd.DataFrame(comparison_data)
-                                    st.dataframe(comparison_df, use_container_width=True)
-                            else:
-                                st.info("No competitor data available for comparison.")
+                                    # Create visualization data
+                                    if insights:
+                                        df = pd.DataFrame(insights)
+                                        
+                                        # Bar chart for schema usage
+                                        fig = px.bar(df, 
+                                                   x='schema_type', 
+                                                   y='percentage',
+                                                   title='Schema Usage Across Competitors',
+                                                   labels={'schema_type': 'Schema Type', 
+                                                          'percentage': 'Usage Percentage (%)'},
+                                                   color='percentage',
+                                                   color_continuous_scale='Viridis')
+                                        
+                                        fig.update_layout(
+                                            xaxis_tickangle=-45,
+                                            showlegend=False,
+                                            height=500,
+                                            margin=dict(t=30, b=50)
+                                        )
+                                        
+                                        st.plotly_chart(fig, use_container_width=True)
+                                        
+                                        # Add summary statistics
+                                        total_competitors = len(competitor_data)
+                                        st.info(f"📈 Analyzed {total_competitors} competitor websites")
+                                        
+                                        # Display most common schemas
+                                        top_schemas = df.nlargest(3, 'percentage')
+                                        st.success("🔝 Most Common Schema Types:")
+                                        for _, row in top_schemas.iterrows():
+                                            st.markdown(f"- **{row['schema_type']}**: {row['percentage']:.1f}% of competitors")
+                                        
+                                        # Detailed statistics in an expandable section
+                                        with st.expander("📊 View Detailed Statistics", expanded=False):
+                                            stats_df = df[['schema_type', 'count', 'percentage']].copy()
+                                            stats_df.columns = ['Schema Type', 'Number of Competitors', 'Usage Percentage (%)']
+                                            stats_df['Usage Percentage (%)'] = stats_df['Usage Percentage (%)'].round(1)
+                                            st.dataframe(stats_df, use_container_width=True)
+                                        
+                                        # Current implementation comparison with enhanced visualization
+                                        if schema_data:
+                                            st.subheader("🔄 Your Implementation vs Competitors")
+                                            try:
+                                                current_types = set(schema_data.keys()) if schema_data else set()
+                                                comparison_data = []
+                                                
+                                                for schema_type in set(df['schema_type']):
+                                                    competitor_usage = df[df['schema_type'] == schema_type]['percentage'].iloc[0]
+                                                    implemented = schema_type in current_types
+                                                    status = "✅ Implemented" if implemented else "❌ Missing"
+                                                    comparison_data.append({
+                                                        'Schema Type': schema_type,
+                                                        'Status': status,
+                                                        'Competitor Usage': competitor_usage,
+                                                        'Implementation': 100 if implemented else 0
+                                                    })
+                                                
+                                                comparison_df = pd.DataFrame(comparison_data)
+                                                
+                                                # Create implementation gap visualization
+                                                fig2 = px.bar(comparison_df,
+                                                            x='Schema Type',
+                                                            y=['Implementation', 'Competitor Usage'],
+                                                            title='Implementation Gap Analysis',
+                                                            barmode='group',
+                                                            labels={'value': 'Percentage (%)', 'variable': 'Metric'},
+                                                            color_discrete_map={
+                                                                'Implementation': '#00CC96',
+                                                                'Competitor Usage': '#636EFA'
+                                                            })
+                                                
+                                                fig2.update_layout(
+                                                    xaxis_tickangle=-45,
+                                                    height=400,
+                                                    margin=dict(t=30, b=50),
+                                                    showlegend=True,
+                                                    legend_title_text='Metric'
+                                                )
+                                                
+                                                st.plotly_chart(fig2, use_container_width=True)
+                                                
+                                                # Display recommendations based on gaps
+                                                missing_schemas = comparison_df[comparison_df['Implementation'] == 0]
+                                                if not missing_schemas.empty:
+                                                    st.warning("🎯 Implementation Gaps Identified")
+                                                    st.markdown("### Recommended Actions:")
+                                                    for _, row in missing_schemas.iterrows():
+                                                        priority = (
+                                                            'High 🔥' if row['Competitor Usage'] > 75
+                                                            else 'Medium ⚡' if row['Competitor Usage'] > 50
+                                                            else 'Low ⭐'
+                                                        )
+                                                        st.markdown(f"""
+                                                        - Implement **{row['Schema Type']}** schema
+                                                          - Used by {row['Competitor Usage']:.1f}% of competitors
+                                                          - Priority: {priority}
+                                                        """)
+                                                
+                                                # Display detailed comparison table
+                                                with st.expander("📋 View Detailed Comparison", expanded=False):
+                                                    st.dataframe(
+                                                        comparison_df.style.apply(
+                                                            lambda x: ['background-color: #E8F5E9' if '✅' in str(v) else '' for v in x]
+                                                        ),
+                                                        use_container_width=True
+                                                    )
+                                            except Exception as e:
+                                                st.error(f"Error creating comparison visualization: {str(e)}")
+                                    else:
+                                        st.info("No competitor data available for comparison.")
+                            except Exception as e:
+                                st.error(f"Error analyzing competitor data: {str(e)}")
 
                         # Display schema details
                         if validation_results.get('good_schemas'):
