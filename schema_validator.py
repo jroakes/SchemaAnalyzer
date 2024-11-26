@@ -41,8 +41,10 @@ class SchemaValidator:
 
             if not current_schema:
                 validation_results['warnings'].append('No schema data found on the page')
-                # Add competitor-based recommendations
-                validation_results['suggested_additions'] = self._get_competitor_recommendations()
+                # Get competitor recommendations when no schema is found
+                competitor_recommendations = self._get_competitor_recommendations()
+                if competitor_recommendations:
+                    validation_results['suggested_additions'].extend(competitor_recommendations)
                 return validation_results
 
             # Update schema type normalization
@@ -214,9 +216,13 @@ class SchemaValidator:
 
     def _get_competitor_recommendations(self, current_schema: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         try:
-            # Get competitor schema types from CompetitorAnalyzer
+            # Initialize CompetitorAnalyzer with keyword
             competitor_analyzer = CompetitorAnalyzer(self.keyword) if self.keyword else None
-            competitor_data = competitor_analyzer.analyze_competitors() if competitor_analyzer else {}
+            if not competitor_analyzer:
+                return []
+                
+            # Get competitor data
+            competitor_data = competitor_analyzer.analyze_competitors()
             
             # Count schema usage among competitors
             type_counts = {}
@@ -224,25 +230,18 @@ class SchemaValidator:
                 for schema_type in schemas.keys():
                     type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
             
-            # Filter for types that appear in multiple competitor sites
-            multiple_usage_types = {
-                schema_type: count 
-                for schema_type, count in type_counts.items() 
-                if count > 1
-            }
-            
-            # Generate recommendations based on current schema presence
+            # Generate recommendations for types used by multiple competitors
             recommendations = []
             current_types = set(current_schema.keys()) if current_schema else set()
             
-            for schema_type, count in multiple_usage_types.items():
-                # Only suggest types not present in current schema
-                if not current_schema or schema_type not in current_types:
-                    recommendations.append({
-                        'type': schema_type,
-                        'reason': f"Used by {count} competitors",
-                        'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
-                    })
+            for schema_type, count in type_counts.items():
+                if count > 1:  # Only include types used by multiple competitors
+                    if not current_schema or schema_type not in current_types:
+                        recommendations.append({
+                            'type': schema_type,
+                            'reason': f"Used by {count} competitors",
+                            'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
+                        })
             
             # Sort by competitor usage count
             return sorted(recommendations, key=lambda x: int(x['reason'].split()[2]), reverse=True)
