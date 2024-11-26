@@ -1,0 +1,55 @@
+I do not find the string "validator.schema.org" in your code. I do see this silly code:
+
+required_props = ['@context', '@type']
+for prop in required_props:
+    if prop not in schema_data:
+        validation_results['errors'].append(f"Missing required property: {prop}")
+which doesn't work with graph-based schemas.
+
+Please implement the following for schema validation and remove current code that perfoms this task:
+
+endpoint = "https://validator.schema.org/validate"
+url = "https://ahrefs.com/blog/free-seo-tools/"
+
+def get_schema_data(url: str, endpoint: str) -> dict:
+try:
+response = requests.post(endpoint, data={"url": url})
+response.raise_for_status()
+
+    if response.text.startswith(")]}'"):
+        response = response.text[5:]
+    data = json.loads(response)
+    return data
+except requests.RequestException as e:
+    raise Exception(f"Error fetching URL: {str(e)}")
+def extract_schema_data(data: dict) -> dict:
+response = {'errors': [], 'warnings': [], 'schema_data': {}}
+
+for triple_group in data.get('tripleGroups', []):
+    for node in triple_group.get('nodes', []):
+        for prop in node.get('properties', []):
+            if prop.get('errors'):
+                response['errors'].append(prop)
+            elif prop.get('warnings'):
+                response['warnings'].append(prop)
+            else:
+                response['schema_data'][prop['pred']] = prop['value']
+return response
+data = get_schema_data(url, endpoint)
+schema_data = extract_schema_data(data)
+
+schema_data
+
+{'errors': [],
+'warnings': [],
+'schema_data': {'entry-title': '34 Free SEO Tools for DIY SEOs',
+'updated': 'Updated: May 28, 2024',
+'published': 'Updated: May 28, 2024',
+'tag': 'https://ahrefs.com/blog/category/general-seo/',
+'headline': '34 Free SEO Tools for DIY SEOs',
+'datePublished': '2024-01-04T22:57:53+00:00',
+'dateModified': '2024-06-16T20:04:35+00:00',
+'wordCount': '3394',
+'thumbnailUrl': 'https://ahrefs.com/blog/wp-content/uploads/2024/01/34-free-seo-tools-for-diy-by-si-quan-ong-general-seo.jpg',
+'articleSection': 'General SEO',
+'inLanguage': 'en-US'}}
