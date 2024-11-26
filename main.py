@@ -215,23 +215,16 @@ def main():
             
             st.markdown('''
                 <style>
-                    /* Absolute positioning for button container */
                     div[data-testid="stForm"] div.stButton {
-                        position: relative;
-                        height: 80px;
-                        margin: 0;
-                        padding: 0;
+                        display: flex;
+                        justify-content: center;
                         width: 100%;
+                        margin: 2rem 0;
                     }
-                    
-                    /* Centered button styling */
+
                     div[data-testid="stForm"] div.stButton > button {
-                        position: absolute;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        min-width: 240px;
-                        max-width: 320px;
-                        height: 48px;
+                        width: auto;
+                        min-width: 200px;
                         padding: 0.75rem 2.5rem;
                         background: linear-gradient(45deg, #2979ff, #1565c0);
                         color: white;
@@ -240,8 +233,7 @@ def main():
                         font-weight: 600;
                         text-transform: uppercase;
                         letter-spacing: 1.2px;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        box-shadow: 0 2px 4px rgba(41, 121, 255, 0.1);
+                        transition: all 0.3s ease;
                     }
                     
                     div[data-testid="stForm"] div.stButton > button:hover {

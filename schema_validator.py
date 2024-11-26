@@ -2,6 +2,7 @@ import requests
 from functools import lru_cache
 import streamlit as st
 from gpt_schema_analyzer import GPTSchemaAnalyzer
+from competitor_analyzer import CompetitorAnalyzer
 import logging
 import json
 import urllib.parse
