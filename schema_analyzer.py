@@ -26,12 +26,19 @@ class SchemaAnalyzer:
             for tag in schema_tags:
                 try:
                     data = json.loads(tag.string)
-                    if isinstance(data, dict):
+                    if isinstance(data, dict) and '@type' in data:
                         schema_type = data.get('@type')
                         if schema_type:
                             schema_data[schema_type] = data
+                    # Added @graph parsing
+                    elif isinstance(data, dict) and '@graph' in data:
+                        for item in data['@graph']:
+                            schema_type = item.get('@type')
+                            if schema_type:
+                                schema_data[schema_type] = item    
                     elif isinstance(data, list):
                         for item in data:
+                            print(item)
                             if isinstance(item, dict):
                                 schema_type = item.get('@type')
                                 if schema_type:
