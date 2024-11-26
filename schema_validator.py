@@ -15,59 +15,83 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class SchemaValidator:
+class SchemaOrgValidator:
+    """Handles Schema.org specific validation logic."""
+    
     SCHEMA_VALIDATOR_ENDPOINT = "https://validator.schema.org/validate"
 
-    def __init__(self, schema_types_df, keyword=None):
-        self.schema_types_df = schema_types_df
-        self.gpt_analyzer = GPTSchemaAnalyzer()
-        self.validation_cache = {}
-        self.last_validation_time = {}
-        self.keyword = keyword
+    def __init__(self):
+        """Initialize Schema.org validator with proper headers."""
+        self.headers = {
+            'User-Agent': 'Schema Analysis Tool/1.0',
+            'Accept': 'application/json'
+        }
 
-    def _normalize_schema_type(self, schema_type: str) -> str:
-        """Normalize schema type to official format"""
-        schema_type = schema_type.replace('Website', 'WebSite')
-        return schema_type
-
-    def _get_schema_data(self, url: str) -> dict:
-        """Get schema data from Schema.org validator with enhanced error handling"""
+    def validate_url(self, url: str) -> Dict[str, Any]:
+        """
+        Validate a URL using the Schema.org validator.
+        
+        Args:
+            url: The URL to validate
+            
+        Returns:
+            Dict containing validation results
+        """
         try:
-            headers = {
-                'User-Agent': 'Schema Analysis Tool/1.0',
-                'Accept': 'application/json'
-            }
             response = requests.post(
                 self.SCHEMA_VALIDATOR_ENDPOINT,
                 data={"url": url},
-                headers=headers,
+                headers=self.headers,
                 timeout=30
             )
             response.raise_for_status()
 
-            # Handle Schema.org's specific response format
-            if response.text.startswith(")]}'\n"):
-                response_text = response.text[5:]
-            else:
-                response_text = response.text
-
-            try:
-                data = json.loads(response_text)
-                return data
-            except json.JSONDecodeError as e:
-                logger.error(f"Invalid JSON response from Schema.org validator: {str(e)}")
-                raise Exception(f"Invalid response format from Schema.org validator: {str(e)}")
-
+            return self._process_validator_response(response.text)
         except requests.Timeout:
             logger.error("Schema.org validator request timed out")
             raise Exception("Schema.org validator request timed out. Please try again.")
         except requests.RequestException as e:
-            logger.error(f"Error fetching from Schema.org validator: {str(e)}")
+            logger.error(f"Error accessing Schema.org validator: {str(e)}")
             raise Exception(f"Error accessing Schema.org validator: {str(e)}")
 
-    def _extract_schema_data(self, data: dict) -> dict:
-        """Extract and process schema data from validator response with enhanced validation"""
-        response = {
+    def validate_schema(self, schema_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate schema data directly using Schema.org validator.
+        
+        Args:
+            schema_data: The schema data to validate
+            
+        Returns:
+            Dict containing validation results
+        """
+        try:
+            if not isinstance(schema_data, dict):
+                raise ValueError("Schema data must be a dictionary")
+
+            if '@context' not in schema_data:
+                raise ValueError("Schema data must include @context")
+
+            validation_data = self.validate_url(schema_data['@context'])
+            return self._extract_validation_details(validation_data)
+        except Exception as e:
+            logger.error(f"Schema validation error: {str(e)}")
+            raise
+
+    def _process_validator_response(self, response_text: str) -> Dict[str, Any]:
+        """Process and parse Schema.org validator response."""
+        try:
+            # Handle Schema.org's specific response format
+            if response_text.startswith(")]}'\n"):
+                response_text = response_text[5:]
+
+            return json.loads(response_text)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON response from Schema.org validator: {str(e)}")
+            raise Exception(f"Invalid response format from Schema.org validator: {str(e)}")
+
+    def _extract_validation_details(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Extract detailed validation information from validator response."""
+        validation_details = {
             'errors': [],
             'warnings': [],
             'schema_data': {},
@@ -79,51 +103,73 @@ class SchemaValidator:
         }
 
         try:
-            # Process all triple groups
             for triple_group in data.get('tripleGroups', []):
-                response['validation_details']['num_triples'] += 1
+                validation_details['validation_details']['num_triples'] += 1
                 
                 for node in triple_group.get('nodes', []):
-                    response['validation_details']['num_nodes'] += 1
+                    validation_details['validation_details']['num_nodes'] += 1
                     node_type = node.get('type', 'Unknown')
                     
                     for prop in node.get('properties', []):
                         prop_name = prop.get('pred', '')
-                        response['validation_details']['properties_found'].add(prop_name)
+                        validation_details['validation_details']['properties_found'].add(prop_name)
                         
                         if prop.get('errors'):
                             for error in prop['errors']:
-                                response['errors'].append({
+                                validation_details['errors'].append({
                                     'property': prop_name,
                                     'message': error,
                                     'node_type': node_type
                                 })
                         elif prop.get('warnings'):
                             for warning in prop['warnings']:
-                                response['warnings'].append({
+                                validation_details['warnings'].append({
                                     'property': prop_name,
                                     'message': warning,
                                     'node_type': node_type
                                 })
                         else:
-                            response['schema_data'][prop_name] = {
+                            validation_details['schema_data'][prop_name] = {
                                 'value': prop['value'],
                                 'node_type': node_type
                             }
-            
+
             # Convert properties_found set to list for JSON serialization
-            response['validation_details']['properties_found'] = list(
-                response['validation_details']['properties_found']
+            validation_details['validation_details']['properties_found'] = list(
+                validation_details['validation_details']['properties_found']
             )
             
-            return response
-            
+            return validation_details
         except Exception as e:
-            logger.error(f"Error extracting schema data: {str(e)}")
-            raise Exception(f"Error processing Schema.org validation response: {str(e)}")
+            logger.error(f"Error extracting validation details: {str(e)}")
+            raise Exception(f"Error processing validation details: {str(e)}")
+
+class SchemaValidator:
+    """Main schema validator class that coordinates different validation strategies."""
+
+    def __init__(self, schema_types_df, keyword: Optional[str] = None):
+        """
+        Initialize SchemaValidator with necessary components.
+        
+        Args:
+            schema_types_df: DataFrame containing schema type information
+            keyword: Optional keyword for competitor analysis
+        """
+        self.schema_types_df = schema_types_df
+        self.gpt_analyzer = GPTSchemaAnalyzer()
+        self.schema_org_validator = SchemaOrgValidator()
+        self.keyword = keyword
 
     def validate_schema(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate schema using Schema.org validator"""
+        """
+        Validate schema using multiple validation strategies.
+        
+        Args:
+            current_schema: The schema data to validate
+            
+        Returns:
+            Dict containing validation results
+        """
         try:
             validation_results = {
                 'good_schemas': [],
@@ -149,42 +195,32 @@ class SchemaValidator:
             # Process each schema type
             for schema_type, schema_data in current_schema.items():
                 try:
+                    validation_entry = {
+                        'type': schema_type,
+                        'data': schema_data,
+                        'issues': []
+                    }
+
                     # Validate using Schema.org validator
-                    if isinstance(schema_data, dict) and '@context' in schema_data:
-                        schema_url = schema_data['@context']
-                        validator_data = self._get_schema_data(schema_url)
-                        validation_data = self._extract_schema_data(validator_data)
-
-                        validation_entry = {
-                            'type': schema_type,
-                            'data': schema_data,
-                            'issues': []
-                        }
-
-                        # Process validation results
-                        if validation_data['errors']:
+                    schema_validation = self.schema_org_validator.validate_schema(schema_data)
+                    
+                    if schema_validation['errors']:
+                        validation_entry['issues'].extend([
+                            {'severity': 'error', 'message': error['message']}
+                            for error in schema_validation['errors']
+                        ])
+                        validation_results['needs_improvement'].append(validation_entry)
+                    else:
+                        if schema_validation['warnings']:
                             validation_entry['issues'].extend([
-                                {'severity': 'error', 'message': error}
-                                for error in validation_data['errors']
+                                {'severity': 'warning', 'message': warning['message']}
+                                for warning in schema_validation['warnings']
                             ])
                             validation_results['needs_improvement'].append(validation_entry)
                         else:
-                            if validation_data['warnings']:
-                                validation_entry['issues'].extend([
-                                    {'severity': 'warning', 'message': warning}
-                                    for warning in validation_data['warnings']
-                                ])
-                                validation_results['needs_improvement'].append(validation_entry)
-                            else:
-                                validation_results['good_schemas'].append(validation_entry)
+                            validation_results['good_schemas'].append(validation_entry)
 
-                        validation_results['all_types'].append(schema_type)
-
-                    else:
-                        validation_results['errors'].append({
-                            'severity': 'error',
-                            'message': f'Invalid schema structure for {schema_type}: Missing @context'
-                        })
+                    validation_results['all_types'].append(schema_type)
 
                 except Exception as e:
                     logger.error(f"Error validating schema {schema_type}: {str(e)}")
@@ -214,7 +250,7 @@ class SchemaValidator:
             }
 
     def _get_competitor_recommendations(self) -> List[Dict[str, Any]]:
-        """Get schema recommendations based on competitor analysis"""
+        """Get schema recommendations based on competitor analysis."""
         try:
             if not self.keyword:
                 return []
@@ -255,71 +291,3 @@ class SchemaValidator:
         except Exception as e:
             logger.error(f"Error in competitor recommendations: {str(e)}")
             return []
-
-    def get_schema_description(self, schema_type: str) -> Optional[str]:
-        """Get detailed description for a schema type"""
-        row = self.schema_types_df[self.schema_types_df['Name'] == schema_type]
-        if not row.empty:
-            return row['Description'].iloc[0]
-        return None
-
-    def get_missing_schema_types(self, current_schema: Dict[str, Any]) -> list:
-        """Identify potentially beneficial missing schema types"""
-        try:
-            current_types = set(clean_schema_type(t) for t in current_schema.keys())
-            missing_types = []
-
-            for _, row in self.schema_types_df.iterrows():
-                schema_type = row['Name']
-                if schema_type not in current_types:
-                    missing_types.append({
-                        'type': schema_type,
-                        'description': row['Description'],
-                        'schema_url': row['Schema URL'],
-                        'google_doc': row['Google Doc URL']
-                    })
-
-            return missing_types
-
-        except Exception as e:
-            logger.error(f"Error finding missing schema types: {str(e)}")
-            return []
-
-    def analyze_rich_result_potential(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze potential for rich results"""
-        rich_results = {}
-
-        try:
-            for schema_type, schema_data in current_schema.items():
-                try:
-                    normalized_type = clean_schema_type(schema_type)
-                    
-                    # Get validation results from Schema.org
-                    if isinstance(schema_data, dict) and '@context' in schema_data:
-                        validator_data = self._get_schema_data(schema_data['@context'])
-                        validation_data = self._extract_schema_data(validator_data)
-                        
-                        # Get Google documentation URL
-                        google_doc = None
-                        if normalized_type in self.schema_types_df['Name'].values:
-                            google_doc = self.schema_types_df[
-                                self.schema_types_df['Name'] == normalized_type
-                            ]['Google Doc URL'].iloc[0]
-
-                        rich_results[normalized_type] = {
-                            'validation_results': validation_data,
-                            'google_documentation': google_doc,
-                            'validation_timestamp': datetime.now().isoformat()
-                        }
-
-                except Exception as e:
-                    logger.error(f"Error analyzing rich results for {schema_type}: {str(e)}")
-                    rich_results[normalized_type] = {
-                        'error': f"Analysis failed: {str(e)}"
-                    }
-            
-            return rich_results
-
-        except Exception as e:
-            logger.error(f"Error in rich result analysis: {str(e)}")
-            return rich_results
