@@ -213,35 +213,33 @@ def main():
                 help="Enter the main keyword for competitor analysis"
             )
             
+            # Create three columns for button centering
+            col1, col2, col3 = st.columns([1, 2, 1])
+
+            # Place the button in the middle column
+            with col2:
+                submitted = st.form_submit_button(
+                    "🔍 Analyze Schema",
+                    use_container_width=True,
+                    type="primary",
+                    help="Click to analyze schema markup and get recommendations"
+                )
+
+            # Add minimal CSS just for button styling (not positioning)
             st.markdown('''
                 <style>
-                    div[data-testid="stForm"] {
-                        text-align: center;
-                    }
-
-                    div[data-testid="stForm"] div.stButton > button {
-                        position: relative;
-                        margin: 2rem auto;
-                        min-width: 200px;
-                        padding: 0.75rem 2.5rem;
-                        background: linear-gradient(45deg, #2979ff, #1565c0);
-                        color: white;
-                        border-radius: 24px;
-                        border: none;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 1.2px;
-                    }
+                div.stButton > button {
+                    background: linear-gradient(45deg, #2979ff, #1565c0);
+                    color: white;
+                    border-radius: 24px;
+                    border: none;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 1.2px;
+                    padding: 0.75rem 2.5rem;
+                }
                 </style>
             ''', unsafe_allow_html=True)
-
-            # Remove the custom container divs since we're handling it with CSS
-            submitted = st.form_submit_button(
-                "🔍 Analyze Schema",
-                use_container_width=False,
-                type="primary",
-                help="Click to analyze schema markup and get recommendations"
-            )
         
 
         if submitted:
