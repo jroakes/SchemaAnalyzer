@@ -44,7 +44,7 @@ class SchemaValidator:
                 # Get competitor recommendations when no schema is found
                 competitor_recommendations = self._get_competitor_recommendations(current_schema=None)
                 if competitor_recommendations:
-                    validation_results['suggested_additions'] = competitor_recommendations
+                    validation_results['suggested_additions'].extend(competitor_recommendations)
                 return validation_results
 
             # Update schema type normalization
@@ -229,21 +229,18 @@ class SchemaValidator:
             type_counts = {}
             for url, schemas in competitor_data.items():
                 for schema_type in schemas.keys():
-                    normalized_type = self._normalize_schema_type(schema_type)
-                    type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
+                    type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
             
             # Generate recommendations for types used by multiple competitors
             recommendations = []
-            current_types = set(current_schema.keys()) if current_schema else set()
             
             for schema_type, count in type_counts.items():
                 if count > 1:  # Only include types used by multiple competitors
-                    if not current_schema or schema_type not in current_types:
-                        recommendations.append({
-                            'type': schema_type,
-                            'reason': f"Used by {count} competitors",
-                            'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
-                        })
+                    recommendations.append({
+                        'type': schema_type,
+                        'reason': f'Used by {count} competitors',
+                        'recommendations': self.gpt_analyzer.generate_property_recommendations(schema_type)
+                    })
             
             return recommendations
             
