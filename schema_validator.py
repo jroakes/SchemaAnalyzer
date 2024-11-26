@@ -1,8 +1,8 @@
+import requests
 from functools import lru_cache
 import streamlit as st
 from gpt_schema_analyzer import GPTSchemaAnalyzer
 from competitor_analyzer import CompetitorAnalyzer
-from validators.schema_org_validator import SchemaOrgValidator
 import logging
 import json
 import urllib.parse
@@ -32,8 +32,55 @@ class SchemaValidator:
 
     def _validate_with_schema_org(self, url: str) -> Dict[str, Any]:
         """Validate schema using official Schema.org validator"""
-        validator = SchemaOrgValidator()
-        return validator.validate_with_schema_org(url)
+        try:
+            response = requests.post(self.SCHEMA_VALIDATOR_ENDPOINT, data={"url": url})
+            response.raise_for_status()
+
+            # Handle Schema.org validator's specific response format
+            if response.text.startswith(")]}'"):
+                response_text = response.text[5:]
+            else:
+                response_text = response.text
+
+            data = json.loads(response_text)
+            return self._process_schema_org_response(data)
+        except requests.RequestException as e:
+            logger.error(f"Error validating with Schema.org: {str(e)}")
+            return {
+                'is_valid': False,
+                'errors': [f"Schema.org validation error: {str(e)}"],
+                'warnings': []
+            }
+
+    def _process_schema_org_response(self, data: Dict) -> Dict[str, Any]:
+        """Process and structure Schema.org validator response"""
+        validation_results = {
+            'is_valid': True,
+            'errors': [],
+            'warnings': [],
+            'schema_data': {}
+        }
+
+        try:
+            for triple_group in data.get('tripleGroups', []):
+                for node in triple_group.get('nodes', []):
+                    for prop in node.get('properties', []):
+                        if prop.get('errors'):
+                            validation_results['is_valid'] = False
+                            validation_results['errors'].extend(prop['errors'])
+                        elif prop.get('warnings'):
+                            validation_results['warnings'].extend(prop['warnings'])
+                        else:
+                            validation_results['schema_data'][prop['pred']] = prop['value']
+
+            return validation_results
+        except Exception as e:
+            logger.error(f"Error processing Schema.org response: {str(e)}")
+            return {
+                'is_valid': False,
+                'errors': [f"Error processing validation response: {str(e)}"],
+                'warnings': []
+            }
 
     def validate_schema(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
         try:
