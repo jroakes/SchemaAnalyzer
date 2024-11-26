@@ -335,37 +335,18 @@ def main():
                             )
 
                         with competitor_tab:
-                            st.subheader("📊 Schema Implementation Comparison")
+                            st.markdown("### 📊 Competitor Schema Analysis")
                             
                             # Get competitor insights
                             competitor_analyzer = CompetitorAnalyzer(keyword)
-                            competitor_data = competitor_analyzer.analyze_competitors()
                             insights = competitor_analyzer.get_competitor_insights()
                             
                             # Create visualization data
                             if insights:
                                 df = pd.DataFrame(insights)
                                 
-                                # Bar chart for schema usage
-                                fig = px.bar(df, 
-                                           x='schema_type', 
-                                           y='percentage',
-                                           title='Schema Usage Across Competitors',
-                                           labels={'schema_type': 'Schema Type', 
-                                                  'percentage': 'Usage Percentage (%)'},
-                                           color='percentage',
-                                           color_continuous_scale='Viridis')
-                                
-                                fig.update_layout(
-                                    xaxis_tickangle=-45,
-                                    showlegend=False,
-                                    height=500
-                                )
-                                
-                                st.plotly_chart(fig, use_container_width=True)
-                                
                                 # Detailed statistics table
-                                st.subheader("📈 Detailed Statistics")
+                                st.subheader("📈 Schema Usage Statistics")
                                 stats_df = df[['schema_type', 'count', 'percentage']].copy()
                                 stats_df.columns = ['Schema Type', 'Number of Competitors', 'Usage Percentage (%)']
                                 stats_df['Usage Percentage (%)'] = stats_df['Usage Percentage (%)'].round(1)
