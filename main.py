@@ -372,9 +372,9 @@ def main():
                                 st.dataframe(stats_df, use_container_width=True)
                                 
                                 # Current implementation comparison
-                                if current_schema:
+                                if schema_data:
                                     st.subheader("🔄 Your Implementation vs Competitors")
-                                    current_types = set(current_schema.keys())
+                                    current_types = set(schema_data.keys())
                                     comparison_data = []
                                     
                                     for schema_type in set(df['schema_type']):
