@@ -338,8 +338,6 @@ def main():
                             st.subheader("📊 Schema Implementation Comparison")
                             
                             # Get competitor insights
-                            competitor_analyzer = CompetitorAnalyzer(keyword)
-                            competitor_data = competitor_analyzer.analyze_competitors()
                             insights = competitor_analyzer.get_competitor_insights()
                             
                             # Create visualization data
@@ -387,6 +385,7 @@ def main():
                                         })
                                     
                                     comparison_df = pd.DataFrame(comparison_data)
+                                    st.dataframe(comparison_df, use_container_width=True)
                                     st.dataframe(comparison_df, use_container_width=True)
                             else:
                                 st.info("No competitor data available for comparison.")

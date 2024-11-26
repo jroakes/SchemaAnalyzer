@@ -31,40 +31,96 @@ class SchemaValidator:
         return schema_type
 
     def _get_schema_data(self, url: str) -> dict:
-        """Get schema data from Schema.org validator"""
+        """Get schema data from Schema.org validator with enhanced error handling"""
         try:
-            response = requests.post(self.SCHEMA_VALIDATOR_ENDPOINT, data={"url": url})
+            headers = {
+                'User-Agent': 'Schema Analysis Tool/1.0',
+                'Accept': 'application/json'
+            }
+            response = requests.post(
+                self.SCHEMA_VALIDATOR_ENDPOINT,
+                data={"url": url},
+                headers=headers,
+                timeout=30
+            )
             response.raise_for_status()
 
+            # Handle Schema.org's specific response format
             if response.text.startswith(")]}'\n"):
                 response_text = response.text[5:]
             else:
                 response_text = response.text
 
-            data = json.loads(response_text)
-            return data
+            try:
+                data = json.loads(response_text)
+                return data
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON response from Schema.org validator: {str(e)}")
+                raise Exception(f"Invalid response format from Schema.org validator: {str(e)}")
+
+        except requests.Timeout:
+            logger.error("Schema.org validator request timed out")
+            raise Exception("Schema.org validator request timed out. Please try again.")
         except requests.RequestException as e:
-            logger.error(f"Error fetching URL: {str(e)}")
-            raise Exception(f"Error fetching URL: {str(e)}")
+            logger.error(f"Error fetching from Schema.org validator: {str(e)}")
+            raise Exception(f"Error accessing Schema.org validator: {str(e)}")
 
     def _extract_schema_data(self, data: dict) -> dict:
-        """Extract and process schema data from validator response"""
-        response = {'errors': [], 'warnings': [], 'schema_data': {}}
+        """Extract and process schema data from validator response with enhanced validation"""
+        response = {
+            'errors': [],
+            'warnings': [],
+            'schema_data': {},
+            'validation_details': {
+                'num_triples': 0,
+                'num_nodes': 0,
+                'properties_found': set()
+            }
+        }
 
         try:
+            # Process all triple groups
             for triple_group in data.get('tripleGroups', []):
+                response['validation_details']['num_triples'] += 1
+                
                 for node in triple_group.get('nodes', []):
+                    response['validation_details']['num_nodes'] += 1
+                    node_type = node.get('type', 'Unknown')
+                    
                     for prop in node.get('properties', []):
+                        prop_name = prop.get('pred', '')
+                        response['validation_details']['properties_found'].add(prop_name)
+                        
                         if prop.get('errors'):
-                            response['errors'].extend(prop['errors'])
+                            for error in prop['errors']:
+                                response['errors'].append({
+                                    'property': prop_name,
+                                    'message': error,
+                                    'node_type': node_type
+                                })
                         elif prop.get('warnings'):
-                            response['warnings'].extend(prop['warnings'])
+                            for warning in prop['warnings']:
+                                response['warnings'].append({
+                                    'property': prop_name,
+                                    'message': warning,
+                                    'node_type': node_type
+                                })
                         else:
-                            response['schema_data'][prop['pred']] = prop['value']
+                            response['schema_data'][prop_name] = {
+                                'value': prop['value'],
+                                'node_type': node_type
+                            }
+            
+            # Convert properties_found set to list for JSON serialization
+            response['validation_details']['properties_found'] = list(
+                response['validation_details']['properties_found']
+            )
+            
             return response
+            
         except Exception as e:
             logger.error(f"Error extracting schema data: {str(e)}")
-            raise Exception(f"Error extracting schema data: {str(e)}")
+            raise Exception(f"Error processing Schema.org validation response: {str(e)}")
 
     def validate_schema(self, current_schema: Dict[str, Any]) -> Dict[str, Any]:
         """Validate schema using Schema.org validator"""
