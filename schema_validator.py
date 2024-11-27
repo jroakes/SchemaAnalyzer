@@ -10,17 +10,8 @@ from utils import clean_schema_type
 from typing import Dict, Any, Optional, List, Union
 import re
 from datetime import datetime
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 from validators.base_validator import BaseValidator
 from validators.schema_org_validator import SchemaOrgValidator
-from gpt_schema_analyzer import GPTSchemaAnalyzer
-from competitor_analyzer import CompetitorAnalyzer
-import logging
-from typing import Dict, Any, Optional, List
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
