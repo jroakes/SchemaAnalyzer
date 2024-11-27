@@ -333,6 +333,49 @@ def main():
                                 help="Number of recommended new schemas"
                             )
 
+                        # Good Implementations Section
+                        if validation_results.get('good_schemas'):
+                            st.markdown("### ✅ Good Implementations")
+                            for schema in validation_results['good_schemas']:
+                                with st.container():
+                                    st.markdown(f"""
+                                        <div class="schema-card good">
+                                            <h4>{schema['type']}</h4>
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                    display_schema_documentation_links(schema['type'], schema_types_df)
+                                    st.json(schema['data'])
+
+                        # Needs Improvement Section
+                        if validation_results.get('needs_improvement'):
+                            st.markdown("### ⚠️ Needs Improvement")
+                            for schema in validation_results['needs_improvement']:
+                                with st.container():
+                                    st.markdown(f"""
+                                        <div class="schema-card needs-improvement">
+                                            <h4>{schema['type']}</h4>
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                    display_schema_documentation_links(schema['type'], schema_types_df)
+                                    display_schema_issues(schema['issues'])
+                                    st.json(schema['data'])
+
+                        # Suggested Additions Section
+                        if validation_results.get('suggested_additions'):
+                            st.markdown("### 💡 Suggested Additions")
+                            for schema in validation_results['suggested_additions']:
+                                with st.container():
+                                    st.markdown(f"""
+                                        <div class="schema-card suggested">
+                                            <h4>{schema['type']}</h4>
+                                            <p><strong>Reason:</strong> {schema['reason']}</p>
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                    display_schema_documentation_links(schema['type'], schema_types_df)
+                                    if 'example_implementation' in schema:
+                                        st.markdown("#### Example Implementation")
+                                        st.json(schema['example_implementation'])
+
                     with competitor_tab:
                         st.subheader("📊 Schema Implementation Comparison")
                         
