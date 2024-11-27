@@ -1,78 +1,37 @@
-import os
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+import time
 import logging
-import sys
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, List, Any, Optional
 from schema_analyzer import SchemaAnalyzer
 from competitor_analyzer import CompetitorAnalyzer
 from schema_validator import SchemaValidator
-from utils import format_schema_data
-import plotly.express as px
-import time
-import json
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def format_json_schema(schema_data: Dict) -> str:
-    """Format schema data as JSON string with proper indentation"""
+def initialize_app() -> bool:
+    """Initialize the Streamlit application with required settings."""
     try:
-        return json.dumps(schema_data, indent=2)
-    except:
-        return str(schema_data)
-
-def get_doc_url(schema_row: pd.DataFrame, url_type: str) -> Optional[str]:
-    """Safely get documentation URL from schema row"""
-    try:
-        if isinstance(schema_row, pd.DataFrame) and not schema_row.empty and url_type in schema_row.columns:
-            url = schema_row[url_type].iloc[0]
-            return None if pd.isna(url) else str(url)
-        return None
-    except Exception as e:
-        logger.error(f"Error getting {url_type}: {str(e)}")
-        return None
-
-def check_environment():
-    """Check if all required environment variables are set"""
-    required_vars = ['VALUESERP_API_KEY', 'GOOGLE_API_KEY']
-    missing_vars = [var for var in required_vars if not os.environ.get(var)]
-    if missing_vars:
-        raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
-
-def initialize_app():
-    """Initialize the Streamlit application with error handling"""
-    try:
-        # Check environment variables
-        check_environment()
-        
-        # Configure page
         st.set_page_config(
-            page_title="Schema Analysis Tool",
-            page_icon="🔍",
-            layout="wide",
-            initial_sidebar_state="expanded"
+            page_title="Schema.org Analyzer",
+            page_icon="🚂",
+            layout="wide"
         )
-
-        # Load custom CSS
-        css_path = Path('assets/styles.css')
-        if css_path.exists():
-            with open(css_path) as f:
-                st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-        else:
-            logger.warning("Custom CSS file not found at assets/styles.css")
-            
         return True
     except Exception as e:
-        logger.error(f"Failed to initialize application: {str(e)}")
-        st.error(f"Application initialization failed: {str(e)}")
+        logger.error(f"Error initializing app: {str(e)}")
+        st.error(f"Error initializing application: {str(e)}")
         return False
+
+def get_doc_url(row: pd.Series, column: str) -> Optional[str]:
+    """Get documentation URL from DataFrame row"""
+    try:
+        return row[column].iloc[0] if column in row else None
+    except Exception:
+        return None
 
 def display_schema_documentation_links(schema_type: str, schema_types_df: pd.DataFrame):
     """Display documentation links for a schema type"""
@@ -91,26 +50,76 @@ def display_schema_documentation_links(schema_type: str, schema_types_df: pd.Dat
     except Exception as e:
         logger.error(f"Error displaying documentation links: {str(e)}")
 
-def display_schema_issues(issues: List[Dict[str, Any]]):
-    """Display schema validation issues with proper formatting"""
-    st.markdown("### Issues Found")
+def display_schema_issues(issues: List[Dict[str, Any]], container=None):
+    """Display schema validation issues with proper formatting in a specified container"""
+    display_target = container if container else st
+    display_target.markdown("### Issues Found")
+    
     for issue in issues:
         severity = issue.get('severity', 'info')
-        icon = "🚫" if severity == "error" else "⚠️" if severity == "warning" else "ℹ️"
+        icon_map = {
+            "error": "🚫",
+            "warning": "⚠️",
+            "info": "ℹ️"
+        }
+        icon = icon_map.get(severity, "ℹ️")
         message = issue.get('message', '')
-        st.markdown(
+        
+        display_target.markdown(
             f"""<div class="issue-{severity}">
                 {icon} <strong>{severity.title()}</strong>: {message}
             </div>""",
             unsafe_allow_html=True
         )
+        
         if suggestion := issue.get('suggestion'):
-            st.markdown(
+            display_target.markdown(
                 f"""<div class="suggestion">
                     💡 <em>Suggestion</em>: {suggestion}
                 </div>""",
                 unsafe_allow_html=True
             )
+
+def display_schema_card(schema: Dict[str, Any], card_type: str, schema_types_df: pd.DataFrame):
+    """Display a schema card with consistent styling and expandable content
+    
+    Args:
+        schema: Schema data dictionary
+        card_type: Type of card ('good', 'needs_improvement', or 'suggested')
+        schema_types_df: DataFrame containing schema type information
+    """
+    icons = {
+        'good': '✅',
+        'needs_improvement': '⚠️',
+        'suggested': '💡'
+    }
+    
+    titles = {
+        'good': 'Good Implementation',
+        'needs_improvement': 'Needs Improvement',
+        'suggested': schema.get('reason', 'Suggested Addition')
+    }
+    
+    icon = icons.get(card_type, '📄')
+    title = titles.get(card_type)
+    
+    with st.expander(f"{icon} {schema['type']} ({title})", expanded=False):
+        st.markdown(f"""
+            <div class="schema-card {card_type}">
+                <h4>Implementation Details</h4>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        display_schema_documentation_links(schema['type'], schema_types_df)
+        
+        if card_type == 'needs_improvement' and 'issues' in schema:
+            display_schema_issues(schema['issues'])
+            
+        if 'data' in schema:
+            st.json(schema['data'])
+        elif 'example_implementation' in schema:
+            st.markdown("#### Example Implementation")
+            st.json(schema['example_implementation'])
 
 def display_schema_recommendations(recommendations: str):
     """Display schema recommendations with proper formatting"""
@@ -174,7 +183,6 @@ def main():
         Get recommendations for improvements and ensure compliance with schema.org standards.
         """)
 
-        # Input form with improved layout
         # Add form styling
         st.markdown('''
             <style>
@@ -225,7 +233,7 @@ def main():
                     help="Click to analyze schema markup and get recommendations"
                 )
 
-            # Add minimal CSS just for button styling (not positioning)
+            # Add minimal CSS just for button styling
             st.markdown('''
                 <style>
                 div.stButton > button {
@@ -314,67 +322,32 @@ def main():
                     with analysis_tab:
                         # Summary metrics
                         col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric(
-                                "Good Implementations",
-                                len(validation_results.get('good_schemas', [])),
-                                help="Number of well-implemented schemas"
-                            )
-                        with col2:
-                            st.metric(
-                                "Needs Improvement",
-                                len(validation_results.get('needs_improvement', [])),
-                                help="Number of schemas requiring updates"
-                            )
-                        with col3:
-                            st.metric(
-                                "Suggested Additions",
-                                len(validation_results.get('suggested_additions', [])),
-                                help="Number of recommended new schemas"
-                            )
+                        metrics = [
+                            ("Good Implementations", 'good_schemas', "Number of well-implemented schemas"),
+                            ("Needs Improvement", 'needs_improvement', "Number of schemas requiring updates"),
+                            ("Suggested Additions", 'suggested_additions', "Number of recommended new schemas")
+                        ]
+                        
+                        for (title, key, help_text), col in zip(metrics, [col1, col2, col3]):
+                            with col:
+                                st.metric(
+                                    title,
+                                    len(validation_results.get(key, [])),
+                                    help=help_text
+                                )
 
-                        # Good Implementations Section
-                        if validation_results.get('good_schemas'):
-                            st.markdown("### ✅ Good Implementations")
-                            for schema in validation_results['good_schemas']:
-                                with st.container():
-                                    st.markdown(f"""
-                                        <div class="schema-card good">
-                                            <h4>{schema['type']}</h4>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    display_schema_documentation_links(schema['type'], schema_types_df)
-                                    st.json(schema['data'])
-
-                        # Needs Improvement Section
-                        if validation_results.get('needs_improvement'):
-                            st.markdown("### ⚠️ Needs Improvement")
-                            for schema in validation_results['needs_improvement']:
-                                with st.container():
-                                    st.markdown(f"""
-                                        <div class="schema-card needs-improvement">
-                                            <h4>{schema['type']}</h4>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    display_schema_documentation_links(schema['type'], schema_types_df)
-                                    display_schema_issues(schema['issues'])
-                                    st.json(schema['data'])
-
-                        # Suggested Additions Section
-                        if validation_results.get('suggested_additions'):
-                            st.markdown("### 💡 Suggested Additions")
-                            for schema in validation_results['suggested_additions']:
-                                with st.container():
-                                    st.markdown(f"""
-                                        <div class="schema-card suggested">
-                                            <h4>{schema['type']}</h4>
-                                            <p><strong>Reason:</strong> {schema['reason']}</p>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    display_schema_documentation_links(schema['type'], schema_types_df)
-                                    if 'example_implementation' in schema:
-                                        st.markdown("#### Example Implementation")
-                                        st.json(schema['example_implementation'])
+                        # Schema sections with consistent styling
+                        sections = [
+                            ("✅ Good Implementations", 'good_schemas', 'good'),
+                            ("⚠️ Needs Improvement", 'needs_improvement', 'needs_improvement'),
+                            ("💡 Suggested Additions", 'suggested_additions', 'suggested')
+                        ]
+                        
+                        for section_title, section_key, card_type in sections:
+                            if schemas := validation_results.get(section_key):
+                                st.markdown(f"### {section_title}")
+                                for schema in schemas:
+                                    display_schema_card(schema, card_type, schema_types_df)
 
                     with competitor_tab:
                         st.subheader("📊 Schema Implementation Comparison")
