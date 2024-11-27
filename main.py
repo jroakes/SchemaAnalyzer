@@ -386,7 +386,6 @@ def main():
                                     
                                     comparison_df = pd.DataFrame(comparison_data)
                                     st.dataframe(comparison_df, use_container_width=True)
-                                    st.dataframe(comparison_df, use_container_width=True)
                             else:
                                 st.info("No competitor data available for comparison.")
 
@@ -502,27 +501,6 @@ def main():
                             # Get competitor insights
                             insights = competitor_analyzer.get_competitor_insights()
                             
-                            # Display competitor schema usage
-                            st.subheader("📊 Schema Usage Among Competitors")
-                            
-                            # Create DataFrame for visualization
-                            if insights:
-                                df = pd.DataFrame(insights)
-                                
-                                # Create bar chart
-                                fig = px.bar(
-                                    df,
-                                    x='schema_type',
-                                    y='percentage',
-                                    title='Schema Type Usage (%)',
-                                    labels={'schema_type': 'Schema Type', 'percentage': 'Usage (%)'}
-                                )
-                                fig.update_layout(
-                                    xaxis_tickangle=-45,
-                                    showlegend=False,
-                                    margin=dict(b=100)
-                                )
-                                st.plotly_chart(fig)
                                 
                                 # Display detailed insights
                                 st.subheader("📋 Detailed Insights")
